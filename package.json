@@ -1,0 +1,33 @@
+{
+  "name": "multranslate",
+  "version": "0.1.0",
+  "description": "Command line interface for translating text using multiple providers simultaneously",
+  "keywords": [
+    "tui",
+    "translate",
+    "translator"
+  ],
+  "author": "Lifailon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lifailon/multranslate"
+  },
+  "main": "multranslate.js",
+  "scripts": {
+    "start": "node multranslate.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.5",
+    "blessed": "^0.1.81"
+  },
+  "bin": {
+    "translate": "multranslate.js"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/axios/**/*",
+      "node_modules/blessed/**/*"
+    ]
+  }
+}
