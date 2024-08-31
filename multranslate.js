@@ -2,17 +2,16 @@ const blessed = require('blessed')
 const axios = require('axios')
 
 // Аргументы по умолчанию
-let fromLang = 'en'
-let toLang = 'ru'
+let api = 'MyMemory'
 
 // Обработка аргументов командной строки
-const args = process.argv.slice(2)
+const args = process.argv.slice(1)
 args.forEach(arg => {
     const [key, value] = arg.split('=')
-    if (key === '--fromLang') {
-        fromLang = value
-    } else if (key === '--toLang') {
-        toLang = value
+    if (key === '--api') {
+        if (value.toLowerCase() === 'deeplx') {
+            api = 'DeepLX'
+        }
     }
 })
 
@@ -41,7 +40,7 @@ const inputBox = blessed.textbox({
 
 // Панель для отображения перевода
 const outputBox = blessed.box({
-    label: 'Output',
+    label: `Output (${api})`,
     top: '50%',
     left: 'center',
     width: '100%',
@@ -86,27 +85,55 @@ function detectFromLanguage(text) {
 
 // Функция определения исходного языка
 function detectToLanguage(lang) {
-    if (lang === "ru") {
+    if (lang === 'ru') {
         return 'en'
     } else {
         return 'ru'
     }
 }
 
+let translateText
+
 // Функция перевода через MyMemory API
-async function translateText(text) {
-    fromLang = detectFromLanguage(text)
-    toLang = detectToLanguage(fromLang)
-    try {
-        const response = await axios.get('https://api.mymemory.translated.net/get', {
-            params: {
-                q: text,
-                langpair: `${fromLang}|${toLang}`
-            }
-        })
-        return response.data.responseData.translatedText
-    } catch (error) {
-        return error.message
+if (api.toLowerCase() === 'mymemory') {
+    translateText = async function (text) {
+        fromLang = detectFromLanguage(text)
+        toLang = detectToLanguage(fromLang)
+        try {
+            const response = await axios.get('https://api.mymemory.translated.net/get', {
+                params: {
+                    q: text,
+                    langpair: `${fromLang}|${toLang}`
+                }
+            })
+            return response.data.responseData.translatedText
+        } catch (error) {
+            return error.message
+        }
+    }
+}
+// Функция перевода через DeepLX Serverless на Vercel
+else if (api.toLowerCase() === 'deeplx') {
+    translateText = async function (text) {
+        const fromLang = detectFromLanguage(text)
+        const toLang = detectToLanguage(fromLang)
+        const apiUrl = 'https://deeplx-vercel-phi.vercel.app/api/translate'
+
+        try {
+            const response = await axios.post(apiUrl, {
+                text: text,
+                source_lang: fromLang,
+                target_lang: toLang
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return response.data.data
+        } catch (error) {
+            return error.message
+        }
     }
 }
 
