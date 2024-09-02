@@ -1,17 +1,19 @@
 const blessed = require('blessed')
 const axios = require('axios')
 
-// Аргументы по умолчанию
-let api = 'MyMemory'
-
 // Обработка аргументов командной строки
+let api
 const args = process.argv.slice(1)
 args.forEach(arg => {
     const [key, value] = arg.split('=')
     if (key === '--api') {
         if (value.toLowerCase() === 'deeplx') {
             api = 'DeepLX'
+        } else if (value.toLowerCase() === 'google') {
+            api = 'Google'
         }
+    } else {
+        api = 'MyMemory'
     }
 })
 
@@ -92,15 +94,16 @@ function detectToLanguage(lang) {
     }
 }
 
-let translateText
-
 // Функция перевода через MyMemory API
+// Source: https://mymemory.translated.net/doc/spec.php
+let translateText
 if (api.toLowerCase() === 'mymemory') {
     translateText = async function (text) {
-        fromLang = detectFromLanguage(text)
-        toLang = detectToLanguage(fromLang)
+        const fromLang = detectFromLanguage(text)
+        const toLang = detectToLanguage(fromLang)
+        const apiUrl = 'https://api.mymemory.translated.net/get'
         try {
-            const response = await axios.get('https://api.mymemory.translated.net/get', {
+            const response = await axios.get(apiUrl, {
                 params: {
                     q: text,
                     langpair: `${fromLang}|${toLang}`
@@ -113,12 +116,12 @@ if (api.toLowerCase() === 'mymemory') {
     }
 }
 // Функция перевода через DeepLX Serverless на Vercel
+// Source: https://github.com/bropines/Deeplx-vercel
 else if (api.toLowerCase() === 'deeplx') {
     translateText = async function (text) {
         const fromLang = detectFromLanguage(text)
         const toLang = detectToLanguage(fromLang)
         const apiUrl = 'https://deeplx-vercel-phi.vercel.app/api/translate'
-
         try {
             const response = await axios.post(apiUrl, {
                 text: text,
@@ -131,6 +134,29 @@ else if (api.toLowerCase() === 'deeplx') {
             })
 
             return response.data.data
+        } catch (error) {
+            return error.message
+        }
+    }
+}
+// Функция перевода через Google Serverless на Vercel
+// Source: https://github.com/olavoparno/translate-serverless-vercel
+else if (api.toLowerCase() === 'google') {
+    translateText = async function (text) {
+        const fromLang = detectFromLanguage(text)
+        const toLang = detectToLanguage(fromLang)
+        const apiUrl = 'https://translate-serverless.vercel.app/api/translate'
+        try {
+            const response = await axios.post(apiUrl, {
+                message: text,
+                from: fromLang,
+                to: toLang
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            return response.data.translation.trans_result.dst
         } catch (error) {
             return error.message
         }
