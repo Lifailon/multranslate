@@ -207,6 +207,36 @@ async function translateReverso(text) {
     }
 }
 
+async function translateReversoFetch(text) {
+    const fromLang = detectFromLanguage(text)
+    const toLang = detectToLanguage(fromLang)
+    const apiUrl = 'https://api.reverso.net/translate/v1/translation'
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+                format: 'text',
+                from: fromLang,
+                to: toLang,
+                input: text,
+                options: {
+                    sentenceSplitter: true,
+                    origin: 'translation.web',
+                    contextResults: true,
+                    languageDetection: true
+                }
+            }),
+            headers: {
+                'content-type': 'application/json'
+            }
+        })
+        const data = await response.json()
+        return data.translation.join('')
+    } catch (error) {
+        return error.message
+    }
+}
+
 // Функция обработки перевода
 async function handleTranslation() {
     const textToTranslate = inputBox.getValue().trim()
