@@ -179,6 +179,34 @@ async function translateGoogle(text) {
     }
 }
 
+// Функция перевода через Reverso API
+async function translateReverso(text) {
+    const fromLang = detectFromLanguage(text)
+    const toLang = detectToLanguage(fromLang)
+    const apiUrl = 'https://api.reverso.net/translate/v1/translation'
+    try {
+        const response = await axios.post(apiUrl, {
+            format: 'text',
+            input: text,
+            from: fromLang,
+            to: toLang,
+            options: {
+                sentenceSplitter: true,
+                origin: 'translation.web',
+                contextResults: true,
+                languageDetection: true
+            }
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        return response.data.translation
+    } catch (error) {
+        return error.message
+    }
+}
+
 // Функция обработки перевода
 async function handleTranslation() {
     const textToTranslate = inputBox.getValue().trim()
@@ -190,7 +218,7 @@ async function handleTranslation() {
         ] = await Promise.all([
             translateMyMemory(textToTranslate),
             translateDeepLX(textToTranslate),
-            translateGoogle(textToTranslate)
+            translateReversoFetch(textToTranslate)
         ])
         outputBox1.setContent(translatedText1)
         outputBox2.setContent(translatedText2)
