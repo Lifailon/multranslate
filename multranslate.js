@@ -9,7 +9,7 @@ const inputBox = blessed.textarea({
     top: 'top',
     left: 'center',
     width: '100%',
-    height: '25%',
+    height: '18%',
     inputOnFocus: true,
     border: {
         type: 'line'
@@ -23,13 +23,13 @@ const inputBox = blessed.textarea({
     }
 })
 
-// Панель для отображения перевода от MyMemory
+// Панель для отображения перевода от Google
 const outputBox1 = blessed.textarea({
-    label: `Output (MyMemory)`,
-    top: '25%',
+    label: `Output (Google)`,
+    top: '20%',
     left: 'left',
-    width: '100%',
-    height: '25%',
+    width: '50%',
+    height: '40%',
     border: {
         type: 'line'
     },
@@ -45,10 +45,11 @@ const outputBox1 = blessed.textarea({
 // Панель для отображения перевода от DeepLX
 const outputBox2 = blessed.textarea({
     label: `Output (DeepLX)`,
-    top: '50%',
-    left: 'left',
-    width: '100%',
-    height: '25%',
+    top: '20%',
+    right: 'right',
+    left: '51%',
+    width: '49%',
+    height: '40%',
     border: {
         type: 'line'
     },
@@ -61,13 +62,33 @@ const outputBox2 = blessed.textarea({
     }
 })
 
-// Панель для отображения перевода от Google
+// Панель для отображения перевода от MyMemory
 const outputBox3 = blessed.textarea({
-    label: `Output (Google)`,
-    top: '75%',
+    label: `Output (MyMemory)`,
+    top: '60%',
     left: 'left',
-    width: '100%',
-    height: '25%',
+    width: '50%',
+    height: '40%',
+    border: {
+        type: 'line'
+    },
+    style: {
+        fg: 'white',
+        bg: 'transparent',
+        border: {
+            fg: 'white'
+        }
+    }
+})
+
+// Панель для отображения перевода от Reverso
+const outputBox4 = blessed.textarea({
+    label: `Output (Reverso)`,
+    top: '60%',
+    right: 'right',
+    left: '51%',
+    width: '49%',
+    height: '40%',
     border: {
         type: 'line'
     },
@@ -85,6 +106,7 @@ screen.append(inputBox)
 screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
+screen.append(outputBox4)
 
 // Установить фокус на поле ввода
 inputBox.focus()
@@ -113,21 +135,24 @@ function detectToLanguage(lang) {
     }
 }
 
-// Функция перевода через MyMemory API
-// Source: https://mymemory.translated.net/doc/spec.php
-async function translateMyMemory(text) {
+// Функция перевода через Google API
+// Source: https://github.com/olavoparno/translate-serverless-vercel
+async function translateGoogle(text) {
     const fromLang = detectFromLanguage(text)
     const toLang = detectToLanguage(fromLang)
-    const apiUrl = 'https://api.mymemory.translated.net/get'
+    const apiUrl = 'https://translate-serverless.vercel.app/api/translate'
     try {
-        const response = await axios.get(apiUrl, {
+        const response = await axios.post(apiUrl, {
             timeout: 3000,
-            params: {
-                q: text,
-                langpair: `${fromLang}|${toLang}`
+            message: text,
+            from: fromLang,
+            to: toLang
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
             }
         })
-        return response.data.responseData.translatedText
+        return response.data.translation.trans_result.dst
     } catch (error) {
         return error.message
     }
@@ -156,24 +181,21 @@ async function translateDeepLX(text) {
     }
 }
 
-// Функция перевода через Google API
-// Source: https://github.com/olavoparno/translate-serverless-vercel
-async function translateGoogle(text) {
+// Функция перевода через MyMemory API
+// Source: https://mymemory.translated.net/doc/spec.php
+async function translateMyMemory(text) {
     const fromLang = detectFromLanguage(text)
     const toLang = detectToLanguage(fromLang)
-    const apiUrl = 'https://translate-serverless.vercel.app/api/translate'
+    const apiUrl = 'https://api.mymemory.translated.net/get'
     try {
-        const response = await axios.post(apiUrl, {
+        const response = await axios.get(apiUrl, {
             timeout: 3000,
-            message: text,
-            from: fromLang,
-            to: toLang
-        }, {
-            headers: {
-                'Content-Type': 'application/json'
+            params: {
+                q: text,
+                langpair: `${fromLang}|${toLang}`
             }
         })
-        return response.data.translation.trans_result.dst
+        return response.data.responseData.translatedText
     } catch (error) {
         return error.message
     }
@@ -187,9 +209,9 @@ async function translateReverso(text) {
     try {
         const response = await axios.post(apiUrl, {
             format: 'text',
-            input: text,
             from: fromLang,
             to: toLang,
+            input: text,
             options: {
                 sentenceSplitter: true,
                 origin: 'translation.web',
@@ -199,9 +221,9 @@ async function translateReverso(text) {
         }, {
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
         })
-        return response.data.translation
+        return response.data.translation.join('')
     } catch (error) {
         return error.message
     }
@@ -211,8 +233,12 @@ async function translateReversoFetch(text) {
     const fromLang = detectFromLanguage(text)
     const toLang = detectToLanguage(fromLang)
     const apiUrl = 'https://api.reverso.net/translate/v1/translation'
+    // Создаем Promise, который разрешается через указанный тайм-аут
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), 3000)
+    )
     try {
-        const response = await fetch(apiUrl, {
+        const fetchPromise = fetch(apiUrl, {
             method: 'POST',
             body: JSON.stringify({
                 format: 'text',
@@ -230,6 +256,8 @@ async function translateReversoFetch(text) {
                 'content-type': 'application/json'
             }
         })
+        // Используем Promise.race для применения тайм-аута к запросу
+        const response = await Promise.race([fetchPromise, timeoutPromise])
         const data = await response.json()
         return data.translation.join('')
     } catch (error) {
@@ -244,15 +272,18 @@ async function handleTranslation() {
         const [
             translatedText1,
             translatedText2,
-            translatedText3
+            translatedText3,
+            translatedText4
         ] = await Promise.all([
-            translateMyMemory(textToTranslate),
+            translateGoogle(textToTranslate),
             translateDeepLX(textToTranslate),
+            translateMyMemory(textToTranslate),
             translateReversoFetch(textToTranslate)
         ])
         outputBox1.setContent(translatedText1)
         outputBox2.setContent(translatedText2)
         outputBox3.setContent(translatedText3)
+        outputBox4.setContent(translatedText4)
         screen.render()
         // Вернуть фокус на inputBox
         inputBox.focus()
@@ -264,19 +295,16 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// Обработка очистки экрана
-screen.key(['Ctrl-l'], function () {
-    inputBox.clear
-    outputBox1.setContent('')
-    outputBox2.setContent('')
-    outputBox3.setContent('')
-    screen.render()
-    inputBox.focus()
-})
-
-// Обработка нажатия клавиш выхода
-screen.key(['escape', 'q', 'C-c'], function () {
-    return process.exit(0)
+// Обработка нажатия клавиши для очистки экрана или выхода
+screen.key(['escape'], function () {
+    if (inputBox.getValue().length > 0) {
+        inputBox.clearValue()
+        screen.render()
+        inputBox.focus()
+    } else {
+        // Выйти из приложения, если inputBox пустой
+        return process.exit(0)
+    }
 })
 
 // Отображение интерфейса
