@@ -1,4 +1,10 @@
-# multranslate
+<h1 align="center">
+    multranslate
+</h1>
+
+<h4 align="center">
+    <strong>English</strong> | <a href="README_RU.md">Русский</a>
+</h4>
 
 Terminal user interface based on [blessed library](https://github.com/chjj/blessed) for translating text using multiple translation providers simultaneously. Supports **automatic detection of the source and destination language** between English and Russian.
 
