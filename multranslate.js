@@ -5,12 +5,16 @@ const screen = blessed.screen()
 
 // Панель для ввода текста
 const inputBox = blessed.textarea({
-    label: 'Input',
-    top: 'top',
-    left: 'center',
+    top: '0%',
+    left: 'left',
     width: '100%',
-    height: '18%',
+    height: '20%',
     inputOnFocus: true,
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
     border: {
         type: 'line'
     },
@@ -30,6 +34,11 @@ const outputBox1 = blessed.textarea({
     left: 'left',
     width: '50%',
     height: '40%',
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
     border: {
         type: 'line'
     },
@@ -48,8 +57,13 @@ const outputBox2 = blessed.textarea({
     top: '20%',
     right: 'right',
     left: '51%',
-    width: '49%',
+    width: '50%',
     height: '40%',
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
     border: {
         type: 'line'
     },
@@ -69,6 +83,11 @@ const outputBox3 = blessed.textarea({
     left: 'left',
     width: '50%',
     height: '40%',
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
     border: {
         type: 'line'
     },
@@ -87,8 +106,13 @@ const outputBox4 = blessed.textarea({
     top: '60%',
     right: 'right',
     left: '51%',
-    width: '49%',
+    width: '50%',
     height: '40%',
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
     border: {
         type: 'line'
     },
@@ -107,9 +131,6 @@ screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
-
-// Установить фокус на поле ввода
-inputBox.focus()
 
 // Функция определения исходного языка
 function detectFromLanguage(text) {
@@ -201,7 +222,7 @@ async function translateMyMemory(text) {
     }
 }
 
-// Функция перевода через Reverso API
+// Функция перевода через Reverso API (ошибка: Parse Error: Invalid header value char)
 async function translateReverso(text) {
     const fromLang = detectFromLanguage(text)
     const toLang = detectToLanguage(fromLang)
@@ -229,35 +250,38 @@ async function translateReverso(text) {
     }
 }
 
+// Функция перевода через Reverso API с использованием Fetch
 async function translateReversoFetch(text) {
     const fromLang = detectFromLanguage(text)
     const toLang = detectToLanguage(fromLang)
     const apiUrl = 'https://api.reverso.net/translate/v1/translation'
-    // Создаем Promise, который разрешается через указанный тайм-аут
-    const timeoutPromise = new Promise((_, reject) => 
+    // Создаем Promise для timeout в 3 секунды
+    const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timed out')), 3000)
     )
     try {
-        const fetchPromise = fetch(apiUrl, {
-            method: 'POST',
-            body: JSON.stringify({
-                format: 'text',
-                from: fromLang,
-                to: toLang,
-                input: text,
-                options: {
-                    sentenceSplitter: true,
-                    origin: 'translation.web',
-                    contextResults: true,
-                    languageDetection: true
+        // Выполняем запрос и применяем тайм-аут
+        const response = await Promise.race([
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({
+                    format: 'text',
+                    from: fromLang,
+                    to: toLang,
+                    input: text,
+                    options: {
+                        sentenceSplitter: true,
+                        origin: 'translation.web',
+                        contextResults: true,
+                        languageDetection: true
+                    }
+                }),
+                headers: {
+                    'content-type': 'application/json'
                 }
             }),
-            headers: {
-                'content-type': 'application/json'
-            }
-        })
-        // Используем Promise.race для применения тайм-аута к запросу
-        const response = await Promise.race([fetchPromise, timeoutPromise])
+            timeoutPromise
+        ])
         const data = await response.json()
         return data.translation.join('')
     } catch (error) {
@@ -295,7 +319,36 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// Обработка нажатия клавиши для очистки экрана или выхода
+// Обработчик событий клавиш для перемотки экрана
+inputBox.key(['up', 'down', 'left', 'right'], function(ch, key) {
+    const value = inputBox.getValue()
+    // Прокрутка вверх
+    if (key.name === 'up') {
+        outputBox1.scroll(-1)
+        outputBox2.scroll(-1)
+        outputBox3.scroll(-1)
+        outputBox4.scroll(-1)
+    }
+    // Прокрутка вниз
+    else if (key.name === 'down') {
+        outputBox1.scroll(1)
+        outputBox2.scroll(1)
+        outputBox3.scroll(1)
+        outputBox4.scroll(1)
+    }
+    // else if (key.name === 'left') {
+    //     const currentPos = inputBox.getValue().length
+    //     inputBox.setValue(inputBox.getValue().slice(0, currentPos - 1))
+    //     screen.render()
+    // }
+    // else if (key.name === 'right') {
+    //     const currentPos = inputBox.getValue().length
+    //     inputBox.setValue(inputBox.getValue().slice(0, currentPos + 1))
+    //     screen.render()
+    // }
+})
+
+// Обработка нажатия клавиши для очистки экрана и выхода
 screen.key(['escape'], function () {
     if (inputBox.getValue().length > 0) {
         inputBox.clearValue()
@@ -309,3 +362,5 @@ screen.key(['escape'], function () {
 
 // Отображение интерфейса
 screen.render()
+// Установить фокус на поле ввода
+inputBox.focus()
