@@ -156,12 +156,26 @@ const outputBox4 = blessed.textarea({
     }
 })
 
+// Информация по навигации внизу формы
+const textInfo = blessed.text({
+    content: 'Ctrl+C: clear input, Ctrl+<Q/W/E/R>: copy to clipboard, ⬆/⬇: scroll output up/down, Escape: exit',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    align: 'center',
+    style: {
+        fg: 'blue',
+        bg: 'black'
+    }
+})
+
 // Добавление панелей на экран
 screen.append(inputBox)
 screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
+screen.append(textInfo)
 
 // Функция определения исходного языка
 function detectFromLanguage(text) {
@@ -354,37 +368,6 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// Обработчик событий клавиш для пролистывания экрана панелей вывода
-inputBox.key(['up', 'down'], function(ch, key) {
-    const value = inputBox.getValue()
-    // Прокрутка вверх
-    if (key.name === 'up') {
-        outputBox1.scroll(-1)
-        outputBox2.scroll(-1)
-        outputBox3.scroll(-1)
-        outputBox4.scroll(-1)
-    }
-    // Прокрутка вниз
-    else if (key.name === 'down') {
-        outputBox1.scroll(1)
-        outputBox2.scroll(1)
-        outputBox3.scroll(1)
-        outputBox4.scroll(1)
-    }
-})
-
-// Обработка очистки экрана
-inputBox.key(['C-c'], function () {
-        inputBox.clearValue()
-        screen.render()
-        inputBox.focus()
-})
-
-// Обработка выхода
-inputBox.key(['escape'], function () {
-    return process.exit(0)
-})
-
 // Обработка копирования вывода в буфер обмена
 inputBox.key(['C-q'], function() {
     const textToCopy = outputBox1.getContent()
@@ -430,7 +413,47 @@ inputBox.key(['C-r'], function() {
     inputBox.focus()
 })
 
+// Вставка из буфера обмена
+inputBox.key(['C-v'], function() {
+    clipboardy.read().then(text => {
+        inputBox.setValue(inputBox.getValue() + text)
+        screen.render()
+    })
+})
+
+// Обработчик событий клавиш для пролистывания экрана панелей вывода
+inputBox.key(['up', 'down'], function(ch, key) {
+    const value = inputBox.getValue()
+    // Прокрутка вверх
+    if (key.name === 'up') {
+        outputBox1.scroll(-1)
+        outputBox2.scroll(-1)
+        outputBox3.scroll(-1)
+        outputBox4.scroll(-1)
+    }
+    // Прокрутка вниз
+    else if (key.name === 'down') {
+        outputBox1.scroll(1)
+        outputBox2.scroll(1)
+        outputBox3.scroll(1)
+        outputBox4.scroll(1)
+    }
+})
+
+// Обработка очистки экрана
+inputBox.key(['C-c'], function () {
+    inputBox.clearValue()
+    screen.render()
+    inputBox.focus()
+})
+
+// Обработка выхода
+inputBox.key(['escape'], function () {
+    return process.exit(0)
+})
+
 // Отображение интерфейса
 screen.render()
+
 // Установить фокус на поле ввода
 inputBox.focus()
