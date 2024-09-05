@@ -20,8 +20,8 @@
 
 - Google через бесплатный и безлимитный [API](https://github.com/matheuss/google-translate-api) с использованием [serverless](https://github.com/olavoparno/translate-serverless-vercel), размещенный на Vercel.
 - [DeepLX](https://github.com/OwO-Network/DeepLX) - бесплатный [DeepL](https://deepl.com) API с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless), размещенный на [Vercel](https://github.com/olavoparno/translate-serverless-vercel).
-- [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (использование ограничено 5000 символами/день).
-- [Reverso](https://www.reverso.net) - бесплатный API (не содержит официальной документации, запрос был получен с официального сайта через DevTools).
+- [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (использование ограничено 5000 символами в день).
+- [Reverso](https://www.reverso.net) - бесплатный API (не содержит официальной документации, запрос был получен с официального сайта через *DevTools*).
 
 ## Установка
 
@@ -29,10 +29,15 @@
 
 ```shell
 npm install -g multranslate
+```
+
+Запустите приложение без параметров:
+
+```shell
 multranslate
 ```
 
-### Сборка:
+### Сборка
 
 Клонируйте репозиторий:
 
@@ -41,13 +46,15 @@ git clone https://github.com/Lifailon/multranslate
 cd multranslate
 ```
 
-Запуск приложения:
+Запустите приложения:
 
 ```shell
 npm start
 ```
 
-Для сборки исполняемого файла вы можете использовать [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel).
+### Исполняемый файл
+
+Для сборки исполняемого файла вы можете использовать [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel) (работает нестабильно).
 
 Установите пакет [pkg](https://www.npmjs.com/package/pkg) и воспользуйтесь одной командой для сборки для всех платформ:
 
@@ -58,7 +65,7 @@ pkg .
 
 Поддерживается Windows, Linux и MacOS. Исполняемый файл уже включает в себя все зависимости для своей работы и не требуется установки платформы `node.js`.
 
-> Так как провайдер Reverso не поддерживает работу через Axios (ошибка: `Invalid header value char`), вместо этого используется Fetch. Инструмент pkg поддерживает версию node.js 18 и старше, где Fetch считается эксперементальным, по этому при первом запросе после запуска приложения в поле ввода вы получите ошибку: `The Fetch API is an experimental feature`.
+> Так как провайдер Reverso не поддерживает работу через Axios (ошибка: `Invalid header value char`), вместо этого используется Fetch. Инструмент pkg поддерживает версию node.js 18 и старше (20 версия не поддерживается), где Fetch считается эксперементальным, по этому при первом запросе после запуска приложения в поле ввода вы получите ошибку: `The Fetch API is an experimental feature`.
 
 ## Горячие клавиши
 

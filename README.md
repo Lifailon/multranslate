@@ -29,10 +29,15 @@ Use the [npm](https://www.npmjs.com/package/multranslate) package manager (stabl
 
 ```shell
 npm install -g multranslate
+```
+
+Run the application without parameters:
+
+```shell
 multranslate
 ```
 
-### Build:
+### Build
 
 Clone the repository:
 
@@ -41,13 +46,15 @@ git clone https://github.com/Lifailon/multranslate
 cd multranslate
 ```
 
-Running the application:
+Run the application:
 
 ```shell
 npm start
 ```
 
-To build the executable, you can use [pkg](https://github.com/vercel/pkg) from [Vercel](https://github.com/vercel).
+### Executable
+
+To build the executable, you can use [pkg](https://github.com/vercel/pkg) from [Vercel](https://github.com/vercel) (unstable).
 
 Install the [pkg](https://www.npmjs.com/package/pkg) package and use one command to build for all platforms:
 
@@ -58,7 +65,7 @@ pkg .
 
 Supports Windows, Linux and MacOS. The executable file already includes all dependencies for its operation and does not require installation of the `node.js` platform.
 
-> Since the Reverso provider does not support working via Axios (error: `Invalid header value char`), Fetch is used instead. The pkg tool supports node.js version 18 and higher, where Fetch is considered experimental, so on the first request after running the application in the input field you will get an error: `The Fetch API is an experimental feature`.
+> Since the Reverso provider does not support working via Axios (error: `Invalid header value char`), Fetch is used instead. The pkg tool supports node.js version 18 and higher (version 20 is not supported), where Fetch is considered experimental, so on the first request after running the application in the input field you will get an error: `The Fetch API is an experimental feature`.
 
 ## Hotkeys
 
