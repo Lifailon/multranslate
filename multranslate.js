@@ -5,14 +5,15 @@ const axios = require('axios')
 
 var screen = blessed.screen({
     cursor: {
-      artificial: true,
-      shape: {
-        bg: 'white',
-        fg: 'white',
-        bold: true,
-        ch: ''
-      },
-      blink: false
+        artificial: true,
+        shape: {
+            bg: 'white',
+            fg: 'white',
+            bold: true,
+            ch: ''
+        },
+        blink: false,
+        terminal: 'windows-ansi'
     }
 })
 
@@ -35,7 +36,7 @@ const inputBox = blessed.textarea({
         fg: 'white',
         bg: 'black',
         border: {
-          fg: 'white'
+          fg: 'blue'
         },
         scrollbar: {
           bg: 'white'
@@ -62,7 +63,7 @@ const outputBox1 = blessed.textarea({
         fg: 'white',
         bg: 'black',
         border: {
-          fg: 'white'
+          fg: 'blue'
         },
         scrollbar: {
           bg: 'white'
@@ -90,7 +91,7 @@ const outputBox2 = blessed.textarea({
         fg: 'white',
         bg: 'black',
         border: {
-          fg: 'white'
+          fg: 'blue'
         },
         scrollbar: {
           bg: 'white'
@@ -117,7 +118,7 @@ const outputBox3 = blessed.textarea({
         fg: 'white',
         bg: 'black',
         border: {
-          fg: 'white'
+          fg: 'blue'
         },
         scrollbar: {
           bg: 'white'
@@ -145,7 +146,7 @@ const outputBox4 = blessed.textarea({
         fg: 'white',
         bg: 'black',
         border: {
-          fg: 'white'
+          fg: 'blue'
         },
         scrollbar: {
           bg: 'white'
@@ -351,8 +352,8 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// Обработчик событий клавиш для перемотки экрана
-inputBox.key(['up', 'down', 'left', 'right'], function(ch, key) {
+// Обработчик событий клавиш для прокрутки экрана панелей вывода
+inputBox.key(['up', 'down'], function(ch, key) {
     const value = inputBox.getValue()
     // Прокрутка вверх
     if (key.name === 'up') {
@@ -368,16 +369,6 @@ inputBox.key(['up', 'down', 'left', 'right'], function(ch, key) {
         outputBox3.scroll(1)
         outputBox4.scroll(1)
     }
-    // else if (key.name === 'left') {
-    //     const currentPos = inputBox.getValue().length
-    //     inputBox.setValue(inputBox.getValue().slice(0, currentPos - 1))
-    //     screen.render()
-    // }
-    // else if (key.name === 'right') {
-    //     const currentPos = inputBox.getValue().length
-    //     inputBox.setValue(inputBox.getValue().slice(0, currentPos + 1))
-    //     screen.render()
-    // }
 })
 
 // Обработка нажатия клавиши для очистки экрана и выхода
