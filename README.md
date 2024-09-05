@@ -49,23 +49,14 @@ npm start
 
 The [pkg](https://github.com/vercel/pkg) package from [Vercel](https://github.com/vercel) is used to build the executable.
 
+Install the [pkg](https://www.npmjs.com/package/pkg) package and use one command to build for all platforms:
+
 ```shell
 npm install -g pkg
+pkg .
 ```
 
-- Windows:
-
-```shell
-pkg . --targets node18-win-x64 --output multranslate.exe
-```
-
-- Linux:
-
-```shell
-pkg . --targets node18-linux-x64 --output multranslate
-```
-
-The executable file already includes all dependencies for its operation.
+Supports Windows, Linux and MacOS. The executable file already includes all dependencies for its operation.
 
 ## Hotkeys
 

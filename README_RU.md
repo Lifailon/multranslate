@@ -49,23 +49,14 @@ npm start
 
 Для сборки исполняемого файла используется пакет [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel).
 
+Установите пакет [pkg](https://www.npmjs.com/package/pkg) и воспользуйтесь одной командой для сборки для всех платформ:
+
 ```shell
 npm install -g pkg
+pkg .
 ```
 
-- Windows:
-
-```shell
-pkg . --targets node18-win-x64 --output multranslate.exe
-```
-
-- Linux:
-
-```shell
-pkg . --targets node18-linux-x64 --output multranslate
-```
-
-Исполняемый файл уже включает в себя все зависимости для своей работы.
+Поддерживается Windows, Linux и MacOS. Исполняемый файл уже включает в себя все зависимости для своей работы.
 
 ## Горячие клавиши
 
