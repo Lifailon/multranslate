@@ -25,7 +25,7 @@ Terminal user interface based on [blessed library](https://github.com/chjj/bless
 
 ## Installation
 
-You can [download](https://github.com/Lifailon/multranslate/releases) the executable from the release files or install via the [npm](https://www.npmjs.com/package/multranslate) package manager:
+Use the [npm](https://www.npmjs.com/package/multranslate) package manager (stable version):
 
 ```shell
 npm install -g multranslate
@@ -47,7 +47,7 @@ Running the application:
 npm start
 ```
 
-The [pkg](https://github.com/vercel/pkg) package from [Vercel](https://github.com/vercel) is used to build the executable.
+To build the executable, you can use [pkg](https://github.com/vercel/pkg) from [Vercel](https://github.com/vercel).
 
 Install the [pkg](https://www.npmjs.com/package/pkg) package and use one command to build for all platforms:
 
@@ -56,7 +56,9 @@ npm install -g pkg
 pkg .
 ```
 
-Supports Windows, Linux and MacOS. The executable file already includes all dependencies for its operation.
+Supports Windows, Linux and MacOS. The executable file already includes all dependencies for its operation and does not require installation of the `node.js` platform.
+
+> Since the Reverso provider does not support working via Axios (error: `Invalid header value char`), Fetch is used instead. The pkg tool supports node.js version 18 and higher, where Fetch is considered experimental, so on the first request after running the application in the input field you will get an error: `The Fetch API is an experimental feature`.
 
 ## Hotkeys
 

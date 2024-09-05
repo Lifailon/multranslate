@@ -25,7 +25,7 @@
 
 ## Установка
 
-Вы можете [загрузить](https://github.com/Lifailon/multranslate/releases) исполняемый файл из файлов к релизу или установить через менеджер пакетов [npm](https://www.npmjs.com/package/multranslate):
+Используйте менеджер пакетов [npm](https://www.npmjs.com/package/multranslate) (стабильная версия):
 
 ```shell
 npm install -g multranslate
@@ -47,7 +47,7 @@ cd multranslate
 npm start
 ```
 
-Для сборки исполняемого файла используется пакет [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel).
+Для сборки исполняемого файла вы можете использовать [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel).
 
 Установите пакет [pkg](https://www.npmjs.com/package/pkg) и воспользуйтесь одной командой для сборки для всех платформ:
 
@@ -56,7 +56,9 @@ npm install -g pkg
 pkg .
 ```
 
-Поддерживается Windows, Linux и MacOS. Исполняемый файл уже включает в себя все зависимости для своей работы.
+Поддерживается Windows, Linux и MacOS. Исполняемый файл уже включает в себя все зависимости для своей работы и не требуется установки платформы `node.js`.
+
+> Так как провайдер Reverso не поддерживает работу через Axios (ошибка: `Invalid header value char`), вместо этого используется Fetch. Инструмент pkg поддерживает версию node.js 18 и старше, где Fetch считается эксперементальным, по этому при первом запросе после запуска приложения в поле ввода вы получите ошибку: `The Fetch API is an experimental feature`.
 
 ## Горячие клавиши
 
@@ -68,7 +70,7 @@ pkg .
 
 Чтобы захватить весь текст в одной из панелей вывода для копирования, используйте сочетание клавиш `Shift+Alt` при выделении текста.
 
-Если вы используете [Windows Terminal](https://github.com/microsoft/terminal), добавьте в файл конфигурации `settings.json` параметр, которая будет удалять конечные пробелы из текста в прямоугольном (блочном) выделении при копировании в буфер обмена:
+Если вы используете [Windows Terminal](https://github.com/microsoft/terminal), добавьте в файл конфигурации `settings.json` параметр, который будет удалять конечные пробелы из текста в прямоугольном (блочном) выделении при копировании в буфер обмена:
 
 ```json
 "trimBlockSelection": true
