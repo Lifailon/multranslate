@@ -2,8 +2,14 @@
     multranslate
 </h1>
 
+<p align="center">
+<a href="https://www.npmjs.com/package/multranslate"><img title="GitHub License"src="https://img.shields.io/npm/v/multranslate?logo=npm&logoColor=red"></a>
+<a href="https://www.npmjs.com/package/multranslate"><img title="GitHub License"src="https://img.shields.io/github/languages/top/Lifailon/multranslate?logo=JavaScript&color=yellow"></a>
+<a href="https://github.com/Lifailon/multranslate/blob/rsa/LICENSE"><img title="GitHub License"src="https://img.shields.io/github/license/Lifailon/multranslate?logo=readme&logoColor=white&color=white"></a>
+</p>
+
 <h4 align="center">
-    <strong>Русский</strong> | <a href="README.md">English</a>
+ <a href="README.md">English</a> | <strong>Русский</strong>
 </h4>
 
 Кроссплатформенный терминальный пользовательский интерфейс на основе библиотеки [blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких источников перевода. Все источники не требуют токена доступа или каких-либо настроек. Поддерживает **автоматическое определение исходного и целевого языка** между английским и русским.
