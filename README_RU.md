@@ -6,7 +6,7 @@
     <strong>Русский</strong> | <a href="README.md">English</a>
 </h4>
 
-Терминальный пользовательский интерфейс на основе библиотеки [blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких источников перевода. Все источники не требуют токена доступа или каких-либо настроек. Поддерживает **автоматическое определение исходного и целевого языка** между английским и русским.
+Кроссплатформенный терминальный пользовательский интерфейс на основе библиотеки [blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких источников перевода. Все источники не требуют токена доступа или каких-либо настроек. Поддерживает **автоматическое определение исходного и целевого языка** между английским и русским.
 
 ![Example](/example.jpg)
 
@@ -16,6 +16,49 @@
 - [DeepLX](https://github.com/OwO-Network/DeepLX) - бесплатный [DeepL](https://deepl.com) API с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless), размещенный на [Vercel](https://github.com/olavoparno/translate-serverless-vercel).
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (использование ограничено 5000 символами/день).
 - [Reverso](https://www.reverso.net) - бесплатный API (не содержит официальной документации, запрос был получен с официального сайта через DevTools).
+
+### Установка
+
+Вы можете [загрузить](https://github.com/Lifailon/multranslate/releases) исполняемый файл из файлов к релизу или установить через менеджер пакетов [npm](https://www.npmjs.com/package/multranslate):
+
+```shell
+npm install -g multranslate
+```
+
+#### Сборка:
+
+Клонируйте репозиторий:
+
+```shell
+git clone https://github.com/Lifailon/multranslate
+cd multranslate
+```
+
+Запуск приложения:
+
+```shell
+npm start
+```
+
+Для сборки исполняемого файла используется пакет [pkg](https://github.com/vercel/pkg) от [Vercel](https://github.com/vercel).
+
+```shell
+npm install -g pkg
+```
+
+- Windows:
+
+```shell
+pkg . --targets node18-win-x64 --output multranslate.exe
+```
+
+- Linux:
+
+```shell
+pkg . --targets node18-linux-x64 --output multranslate
+```
+
+Исполняемый файл уже включает в себя все зависимости для своей работы.
 
 ### Горячие клавиши
 

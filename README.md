@@ -17,6 +17,49 @@ Terminal user interface based on [blessed library](https://github.com/chjj/bless
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open api (usage is limited to 5000 chars/day).
 - [Reverso](https://www.reverso.net) - free api (does not contain official documentation, request was received from official site through DevTools).
 
+### Installation
+
+You can [download](https://github.com/Lifailon/multranslate/releases) the executable from the release files or install via the [npm](https://www.npmjs.com/package/multranslate) package manager:
+
+```shell
+npm install -g multranslate
+```
+
+#### Build:
+
+Clone the repository:
+
+```shell
+git clone https://github.com/Lifailon/multranslate
+cd multranslate
+```
+
+Running the application:
+
+```shell
+npm start
+```
+
+The [pkg](https://github.com/vercel/pkg) package from [Vercel](https://github.com/vercel) is used to build the executable.
+
+```shell
+npm install -g pkg
+```
+
+- Windows:
+
+```shell
+pkg . --targets node18-win-x64 --output multranslate.exe
+```
+
+- Linux:
+
+```shell
+pkg . --targets node18-linux-x64 --output multranslate
+```
+
+The executable file already includes all dependencies for its operation.
+
 ### Hotkeys
 
 Using the `up` and `down` buttons you can scroll through all output panels at once.

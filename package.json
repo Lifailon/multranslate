@@ -1,11 +1,10 @@
 {
   "name": "multranslate",
   "version": "0.1.0",
-  "description": "Command line interface for translating text using multiple providers simultaneously",
+  "description": "Cross-platform TUI for translating text using multiple providers simultaneously and support automatic detection of the source and destination language",
   "keywords": [
     "tui",
-    "translate",
-    "translator"
+    "translate"
   ],
   "author": "Lifailon",
   "license": "MIT",
