@@ -3,8 +3,14 @@
   "version": "0.1.0",
   "description": "Cross-platform TUI for translating text using multiple providers simultaneously and support automatic detection of the source and destination language",
   "keywords": [
-    "tui",
-    "translate"
+    "TUI",
+    "Blessed",
+    "Translate",
+    "Google-Translate",
+    "DeepL",
+    "DeepLX",
+    "mymemory",
+    "Reverso"
   ],
   "author": "Lifailon",
   "license": "MIT",
@@ -14,14 +20,14 @@
   },
   "main": "multranslate.js",
   "scripts": {
-    "start": "node multranslate.js"
+    "start": "multranslate.js"
   },
   "dependencies": {
     "axios": "^1.7.5",
     "blessed": "^0.1.81"
   },
   "bin": {
-    "translate": "multranslate.js"
+    "multranslate": "multranslate.js"
   },
   "pkg": {
     "assets": [

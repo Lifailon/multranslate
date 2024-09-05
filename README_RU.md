@@ -10,22 +10,23 @@
 
 ![Example](/example.jpg)
 
-### Источники перевода
+## Источники перевода
 
 - Google через бесплатный и безлимитный [API](https://github.com/matheuss/google-translate-api) с использованием [serverless](https://github.com/olavoparno/translate-serverless-vercel), размещенный на Vercel.
 - [DeepLX](https://github.com/OwO-Network/DeepLX) - бесплатный [DeepL](https://deepl.com) API с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless), размещенный на [Vercel](https://github.com/olavoparno/translate-serverless-vercel).
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (использование ограничено 5000 символами/день).
 - [Reverso](https://www.reverso.net) - бесплатный API (не содержит официальной документации, запрос был получен с официального сайта через DevTools).
 
-### Установка
+## Установка
 
 Вы можете [загрузить](https://github.com/Lifailon/multranslate/releases) исполняемый файл из файлов к релизу или установить через менеджер пакетов [npm](https://www.npmjs.com/package/multranslate):
 
 ```shell
 npm install -g multranslate
+multranslate
 ```
 
-#### Сборка:
+### Сборка:
 
 Клонируйте репозиторий:
 
@@ -60,7 +61,7 @@ pkg . --targets node18-linux-x64 --output multranslate
 
 Исполняемый файл уже включает в себя все зависимости для своей работы.
 
-### Горячие клавиши
+## Горячие клавиши
 
 Кнопками `вверх` и `вниз` можно пролистывать все панели вывода одновременно.
 
