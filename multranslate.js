@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-const blessed = require('blessed')
-const axios = require('axios')
+import blessed from 'blessed'
+import axios from 'axios'
+import clipboardy from 'clipboardy'
 
 var screen = blessed.screen({
+    autoPadding: true,
+    smartCSR: true,
     cursor: {
         artificial: true,
         shape: {
@@ -12,8 +15,7 @@ var screen = blessed.screen({
             bold: true,
             ch: ''
         },
-        blink: false,
-        terminal: 'windows-ansi'
+        blink: false
     }
 })
 
@@ -46,7 +48,7 @@ const inputBox = blessed.textarea({
 
 // Панель для отображения перевода от Google
 const outputBox1 = blessed.textarea({
-    label: `Output (Google)`,
+    label: `Google (Ctrl+Q)`,
     top: '20%',
     left: 'left',
     width: '50%',
@@ -73,7 +75,7 @@ const outputBox1 = blessed.textarea({
 
 // Панель для отображения перевода от DeepLX
 const outputBox2 = blessed.textarea({
-    label: `Output (DeepLX)`,
+    label: `DeepL (Ctrl+W)`,
     top: '20%',
     right: 'right',
     left: '51%',
@@ -101,7 +103,7 @@ const outputBox2 = blessed.textarea({
 
 // Панель для отображения перевода от MyMemory
 const outputBox3 = blessed.textarea({
-    label: `Output (MyMemory)`,
+    label: `MyMemory (Ctrl+E)`,
     top: '60%',
     left: 'left',
     width: '50%',
@@ -128,7 +130,7 @@ const outputBox3 = blessed.textarea({
 
 // Панель для отображения перевода от Reverso
 const outputBox4 = blessed.textarea({
-    label: `Output (Reverso)`,
+    label: `Reverso (Ctrl+R)`,
     top: '60%',
     right: 'right',
     left: '51%',
@@ -347,12 +349,12 @@ async function handleTranslation() {
     }
 }
 
-// Обработка нажатия Enter
+// Обработка нажатия Enter для перевода текста и переноса на новую строку
 inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// Обработчик событий клавиш для прокрутки экрана панелей вывода
+// Обработчик событий клавиш для пролистывания экрана панелей вывода
 inputBox.key(['up', 'down'], function(ch, key) {
     const value = inputBox.getValue()
     // Прокрутка вверх
@@ -371,16 +373,61 @@ inputBox.key(['up', 'down'], function(ch, key) {
     }
 })
 
-// Обработка нажатия клавиши для очистки экрана и выхода
-screen.key(['escape'], function () {
-    if (inputBox.getValue().length > 0) {
+// Обработка очистки экрана
+inputBox.key(['C-c'], function () {
         inputBox.clearValue()
         screen.render()
         inputBox.focus()
-    } else {
-        // Выйти из приложения, если inputBox пустой
-        return process.exit(0)
-    }
+})
+
+// Обработка выхода
+inputBox.key(['escape'], function () {
+    return process.exit(0)
+})
+
+// Обработка копирования вывода в буфер обмена
+inputBox.key(['C-q'], function() {
+    const textToCopy = outputBox1.getContent()
+    clipboardy.writeSync(textToCopy)
+    outputBox1.style.border.fg = 'green'
+    outputBox2.style.border.fg = 'blue'
+    outputBox3.style.border.fg = 'blue'
+    outputBox4.style.border.fg = 'blue'
+    screen.render()
+    inputBox.focus()
+})
+
+inputBox.key(['C-w'], function() {
+    const textToCopy = outputBox2.getContent()
+    clipboardy.writeSync(textToCopy)
+    outputBox1.style.border.fg = 'blue'
+    outputBox2.style.border.fg = 'green'
+    outputBox3.style.border.fg = 'blue'
+    outputBox4.style.border.fg = 'blue'
+    screen.render()
+    inputBox.focus()
+})
+
+inputBox.key(['C-e'], function() {
+    const textToCopy = outputBox3.getContent()
+    clipboardy.writeSync(textToCopy)
+    outputBox1.style.border.fg = 'blue'
+    outputBox2.style.border.fg = 'blue'
+    outputBox3.style.border.fg = 'green'
+    outputBox4.style.border.fg = 'blue'
+    screen.render()
+    inputBox.focus()
+})
+
+inputBox.key(['C-r'], function() {
+    const textToCopy = outputBox4.getContent()
+    clipboardy.writeSync(textToCopy)
+    outputBox1.style.border.fg = 'blue'
+    outputBox2.style.border.fg = 'blue'
+    outputBox3.style.border.fg = 'blue'
+    outputBox4.style.border.fg = 'green'
+    screen.render()
+    inputBox.focus()
 })
 
 // Отображение интерфейса

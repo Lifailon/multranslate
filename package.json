@@ -19,20 +19,23 @@
     "url": "https://github.com/Lifailon/multranslate"
   },
   "main": "multranslate.js",
+  "type": "module",
   "scripts": {
     "start": "node multranslate.js"
   },
   "dependencies": {
     "axios": "^1.7.5",
-    "blessed": "^0.1.81"
+    "blessed": "^0.1.81",
+    "clipboardy": "^4.0.0"
   },
   "bin": {
     "multranslate": "multranslate.js"
   },
   "pkg": {
     "assets": [
+      "node_modules/blessed/**/*",
       "node_modules/axios/**/*",
-      "node_modules/blessed/**/*"
+      "node_modules/clipboardy/**/*"
     ],
     "targets": [
       "node18-win-x64",

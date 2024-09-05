@@ -23,21 +23,23 @@ Terminal user interface based on [blessed library](https://github.com/chjj/bless
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open api (usage is limited to 5000 chars/day).
 - [Reverso](https://www.reverso.net) - free api (does not contain official documentation, request was received from official site through DevTools).
 
+> **Reverso** does not support working via **Axios** (error: `Invalid header value char`), **Fetch** is used instead.
+
 ## Installation
 
-Use the [npm](https://www.npmjs.com/package/multranslate) package manager (stable version):
+Use the [npm](https://www.npmjs.com/package/multranslate) package manager:
 
 ```shell
 npm install -g multranslate
 ```
 
-Run the application without parameters:
+Run the application:
 
 ```shell
 multranslate
 ```
 
-### Build
+## Build
 
 Clone the repository:
 
@@ -52,35 +54,12 @@ Run the application:
 npm start
 ```
 
-### Executable
-
-To build the executable, you can use [pkg](https://github.com/vercel/pkg) from [Vercel](https://github.com/vercel) (unstable).
-
-Install the [pkg](https://www.npmjs.com/package/pkg) package and use one command to build for all platforms:
-
-```shell
-npm install -g pkg
-pkg .
-```
-
-Supports Windows, Linux and MacOS. The executable file already includes all dependencies for its operation and does not require installation of the `node.js` platform.
-
-> Since the Reverso provider does not support working via Axios (error: `Invalid header value char`), Fetch is used instead. The pkg tool supports node.js version 18 and higher (version 20 is not supported), where Fetch is considered experimental, so on the first request after running the application in the input field you will get an error: `The Fetch API is an experimental feature`.
-
 ## Hotkeys
 
-Using the `up` and `down` buttons you can scroll through all output panels at once.
+The text is translated every time after pressing the `Enter` button. The `Ctrl+C` keyboard shortcut is used to clear the text input field. The `escape` button is used to exit the program.
 
-The `escape` button is used to clear the text input field, as well as to exit the program if the input field is already empty.
+To copy text to the clipboard from the selected output form, you can use the key combination `Ctrl+<Q/W/E/R>` (for each translator it is indicated in brackets), and the selected form will change its color to green. To paste text into an input field from the clipboard, use `Ctrl+V`.
+
+Using the `up` and `down` buttons you can scroll through all output panels at the same time.
 
 > The blessed library has a number of limitations, so I was unable to implement cursor movement using the left and right arrows.
-
-To capture all text in one of the output panels for copying, use the key combination `Shift+Alt` when selecting text.
-
-If you are using [Windows Terminal](https://github.com/microsoft/terminal), add a parameter in the `settings.json` configuration file that will remove trailing spaces from text in a rectangular (block) selection when copying to the clipboard:
-
-```json
-"trimBlockSelection": true
-```
-
-To paste text from the clipboard, use the keyboard shortcut `Shift+Ctrl+V` or `Ctrl+V` depending on the terminal you are using.
