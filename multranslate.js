@@ -3,7 +3,18 @@
 const blessed = require('blessed')
 const axios = require('axios')
 
-const screen = blessed.screen()
+var screen = blessed.screen({
+    cursor: {
+      artificial: true,
+      shape: {
+        bg: 'white',
+        fg: 'white',
+        bold: true,
+        ch: ''
+      },
+      blink: false
+    }
+})
 
 // Панель для ввода текста
 const inputBox = blessed.textarea({
@@ -22,9 +33,12 @@ const inputBox = blessed.textarea({
     },
     style: {
         fg: 'white',
-        bg: 'transparent',
+        bg: 'black',
         border: {
-            fg: 'white'
+          fg: 'white'
+        },
+        scrollbar: {
+          bg: 'white'
         }
     }
 })
@@ -46,9 +60,12 @@ const outputBox1 = blessed.textarea({
     },
     style: {
         fg: 'white',
-        bg: 'transparent',
+        bg: 'black',
         border: {
-            fg: 'white'
+          fg: 'white'
+        },
+        scrollbar: {
+          bg: 'white'
         }
     }
 })
@@ -71,9 +88,12 @@ const outputBox2 = blessed.textarea({
     },
     style: {
         fg: 'white',
-        bg: 'transparent',
+        bg: 'black',
         border: {
-            fg: 'white'
+          fg: 'white'
+        },
+        scrollbar: {
+          bg: 'white'
         }
     }
 })
@@ -95,9 +115,12 @@ const outputBox3 = blessed.textarea({
     },
     style: {
         fg: 'white',
-        bg: 'transparent',
+        bg: 'black',
         border: {
-            fg: 'white'
+          fg: 'white'
+        },
+        scrollbar: {
+          bg: 'white'
         }
     }
 })
@@ -120,9 +143,12 @@ const outputBox4 = blessed.textarea({
     },
     style: {
         fg: 'white',
-        bg: 'transparent',
+        bg: 'black',
         border: {
-            fg: 'white'
+          fg: 'white'
+        },
+        scrollbar: {
+          bg: 'white'
         }
     }
 })
@@ -142,10 +168,12 @@ function detectFromLanguage(text) {
     const englishMatches = text.match(englishPattern) || []
     const russianCount = russianMatches.length
     const englishCount = englishMatches.length
-    if (russianCount > englishCount) {
+    if (russianCount >= englishCount) {
         return 'ru'
-    } else {
+    } else if (russianCount <= englishCount) {
         return 'en'
+    } else {
+        return ''
     }
 }
 
@@ -153,8 +181,10 @@ function detectFromLanguage(text) {
 function detectToLanguage(lang) {
     if (lang === 'ru') {
         return 'en'
-    } else {
+    } else if (lang === 'en') {
         return 'ru'
+    } else {
+        return ''
     }
 }
 
