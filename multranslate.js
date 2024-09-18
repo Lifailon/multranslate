@@ -7,6 +7,7 @@ import clipboardy from 'clipboardy'
 var screen = blessed.screen({
     autoPadding: true,
     smartCSR: true,
+    // Добавить кастомный курсор Blessed
     cursor: {
         artificial: true,
         shape: {
@@ -25,7 +26,7 @@ const inputBox = blessed.textarea({
     left: 'left',
     width: '100%',
     height: '20%',
-    inputOnFocus: true,
+    inputOnFocus: false, // Отключаем ввод текста для управления через TextBuffer
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -158,7 +159,7 @@ const outputBox4 = blessed.textarea({
 
 // Информация по навигации внизу формы
 const textInfo = blessed.text({
-    content: 'Ctrl+C: clear input, Ctrl+<Q/W/E/R>: copy to clipboard, ⬆/⬇: scroll output up/down, Escape: exit',
+    content: 'Ctrl+C: clear input, Ctrl+<Q/W/E/R>: copy to clipboard, ⬆/⬇: scroll output up/down, Escape: exit', // ⬅/➡: input cursor control
     bottom: 0,
     left: 0,
     right: 0,
@@ -176,6 +177,118 @@ screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
 screen.append(textInfo)
+
+// Класс для управления текстовым буфером и кастомным курсором
+class TextBuffer {
+    constructor() {
+        // Инициализация пустой строки для текста
+        this.text = ''
+        // Начальная позицию курсора
+        this.cursorPosition = 0
+    }
+    // Метод для перемещения курсора влево
+    moveLeft() {
+        // Проверяем, что курсор не находится в начале текста
+        if (this.cursorPosition > 0) {
+            // Уменьшаем позицию курсора на 1
+            this.cursorPosition--
+        }
+    }
+    // Метод для перемещения курсора вправо
+    moveRight() {
+        // Проверяем, что курсор не находится в конце текста
+        if (this.cursorPosition < this.text.length) {
+            // Увеличиваем позицию курсора на 1
+            this.cursorPosition++
+        }
+    }
+    // Метод для отображения перемещения курсора (добавляем кастомный курсор и двигаем текст)
+    viewDisplayCursor() {
+        return this.text.slice(0, this.cursorPosition) + this.getBlinkingCustomCursor() + this.text.slice(this.cursorPosition)
+    }
+    // Метод обновления кастомного курсора
+    getBlinkingCustomCursor() {
+        // return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2588' : ' '
+        return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
+    }
+    disableNativeCursor() {
+        process.stdout.write('\x1B[?25l')
+    }
+    enableNativeCursor() {
+        process.stdout.write('\x1B[?25h')
+    }
+    // Метод для получения текущей позиции курсора
+    getCursorPosition() {
+        return this.cursorPosition
+    }
+    // Метод для получения текущего текста из буфера
+    getText() {
+        return this.text
+    }
+    // Метод для установки нового текста в буфер
+    setText(newText) {
+        // Обновляем текст в буфере
+        this.text = newText
+        // Корректируем позицию курсора, чтобы она не выходила за пределы нового текста
+        this.cursorPosition = Math.min(this.cursorPosition, this.text.length)
+    }
+}
+
+const buffer = new TextBuffer()
+
+// Скрыть нативный курсор терминала при запуске
+buffer.disableNativeCursor()
+
+// Обновляем поле ввода текста каждые 700 миллисекунд для обновления кастомного курсора
+setInterval(() => {
+    inputBox.setValue(buffer.viewDisplayCursor())
+    screen.render()
+}, 500)
+
+// Обработка нажатий клавиш для управления буфером
+inputBox.on('keypress', function (ch, key) {
+    if (key.name === 'left') {
+        buffer.moveLeft()
+    }
+    else if (key.name === 'right') {
+        buffer.moveRight()
+    }
+    else if (key.name === 'backspace') {
+        // Проверяем, что курсор не находится в начале содержимого буфера
+        if (buffer.getCursorPosition() > 0) {
+            // Извлекаем текст с первого (нулевого) индекса по порядковый номер положения курсора без последней буквы (-1) и прибавляем остаток после курсора до конца
+            const newText = buffer.getText().slice(0, buffer.getCursorPosition() - 1) + buffer.getText().slice(buffer.getCursorPosition())
+            // Перемещаем курсор влево после удаления символа
+            buffer.moveLeft()
+            // Обновляем текст в буфере
+            buffer.setText(newText)
+        }
+    }
+    else if (key.name === 'delete') {
+        // Проверяем, что курсор не находится в конце содержимого буфера
+        if (buffer.getCursorPosition() < buffer.getText().length) {
+            const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + buffer.getText().slice(buffer.getCursorPosition() + 1)
+            buffer.setText(newText)
+        }
+    }
+    // Переопределяем нажатие Enter, не добавляя дополнительный символ переноса строки
+    else if (key.name === 'enter') {
+        const newText = buffer.getText()
+        buffer.setText(newText)
+    }
+    // Если нажата любая другая клавиша и она не пустая, добавляем символ в текст
+    else if (ch) {
+        // Обновляем текст, добавляя символом следом за текущей позицией курсора
+        const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + ch + buffer.getText().slice(buffer.getCursorPosition())
+        // Устанавливаем новый текст в буфер
+        buffer.setText(newText)
+        // Перемещаем курсор вправо после добавления символа
+        buffer.moveRight()
+    }
+    // Обновляем поле ввода текста
+    inputBox.setValue(buffer.viewDisplayCursor())
+    screen.render()
+})
 
 // Функция определения исходного языка
 function detectFromLanguage(text) {
@@ -206,6 +319,7 @@ function detectToLanguage(lang) {
 }
 
 // Функция перевода через Google API
+// https://github.com/matheuss/google-translate-api
 // Source: https://github.com/olavoparno/translate-serverless-vercel
 async function translateGoogle(text) {
     const fromLang = detectFromLanguage(text)
@@ -229,6 +343,8 @@ async function translateGoogle(text) {
 }
 
 // Функция перевода через DeepLX API
+// https://github.com/OwO-Network/DeepLX
+// https://github.com/LegendLeo/deeplx-serverless
 // Source: https://github.com/bropines/Deeplx-vercel
 async function translateDeepLX(text) {
     const fromLang = detectFromLanguage(text)
@@ -340,7 +456,8 @@ async function translateReversoFetch(text) {
 
 // Функция обработки перевода
 async function handleTranslation() {
-    const textToTranslate = inputBox.getValue().trim()
+    // Заменяем символ возврата каретки на перенос строки без экранирования
+    const textToTranslate = buffer.getText().trim().replace(/\r/g, '\n')
     if (textToTranslate) {
         const [
             translatedText1,
@@ -363,7 +480,7 @@ async function handleTranslation() {
     }
 }
 
-// Обработка нажатия Enter для перевода текста и переноса на новую строку
+// Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
@@ -416,14 +533,18 @@ inputBox.key(['C-r'], function() {
 // Вставка из буфера обмена
 inputBox.key(['C-v'], function() {
     clipboardy.read().then(text => {
-        inputBox.setValue(inputBox.getValue() + text)
+        // Добавляем текст из буфера обмена к текущему тексту
+        buffer.setText(buffer.getText() + text)
+        // Перемещаем курсор в конец текста
+        buffer.cursorPosition = buffer.getText().length
+        inputBox.setValue(buffer.viewDisplayCursor())
         screen.render()
     })
 })
 
+
 // Обработчик событий клавиш для пролистывания экрана панелей вывода
 inputBox.key(['up', 'down'], function(ch, key) {
-    const value = inputBox.getValue()
     // Прокрутка вверх
     if (key.name === 'up') {
         outputBox1.scroll(-1)
@@ -442,9 +563,9 @@ inputBox.key(['up', 'down'], function(ch, key) {
 
 // Обработка очистки экрана
 inputBox.key(['C-c'], function () {
-    inputBox.clearValue()
+    buffer.setText("")
+    inputBox.setValue(buffer.viewDisplayCursor())
     screen.render()
-    inputBox.focus()
 })
 
 // Обработка выхода
