@@ -178,7 +178,9 @@ screen.append(outputBox3)
 screen.append(outputBox4)
 screen.append(textInfo)
 
-// Класс для управления текстовым буфером и кастомным курсором
+// ------------------------------------- TextBuffer -------------------------------------
+
+// Класс для управления текстовым буфером и курсором
 class TextBuffer {
     constructor() {
         // Инициализация пустой строки для текста
@@ -202,30 +204,70 @@ class TextBuffer {
             this.cursorPosition++
         }
     }
-    // Метод для отображения перемещения курсора (добавляем кастомный курсор и двигаем текст)
+    // Метод для отображения перемещения курсора
     viewDisplayCursor() {
-        return this.text.slice(0, this.cursorPosition) + this.getBlinkingCustomCursor() + this.text.slice(this.cursorPosition)
+        // Обновление кастомного курсора (1)
+        // return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor() + this.text.slice(this.cursorPosition)
+        // Обновление нативного курсора
+        return this.text.slice(0, this.cursorPosition) + this.navigateNativeCursor() + this.text.slice(this.cursorPosition)
     }
     // Метод обновления кастомного курсора
-    getBlinkingCustomCursor() {
+    navigateCustomCursor() {
         // return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2588' : ' '
         return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
     }
+    // Метод обновления нативного курсора
+    navigateNativeCursor() {
+        // Фиксируем текущую ширину и высоту окна (высота 40: 6 + 14*2 = 34 + 1+2+2+1 и ширина 139: 1+67+3+67+1)
+        const columns = process.stdout.columns
+        const rows = process.stdout.rows
+        // Разбиваем текст на строки (формируем массив из строк)
+        let lines = this.text.split('\r')
+        // Определяем строку, в которой находится курсор буфера (cursorPosition)
+        let currentLine = 0
+        let totalChars = 0
+        for (let i = 0; i < lines.length; i++) {
+            totalChars += lines[i].length + 1 // +1 учитывает символ '\r'
+            if (this.cursorPosition < totalChars) {
+                currentLine = i
+                break
+            }
+        }
+        // Рассчитываем позицию курсора в пределах текущей строки
+        let charPositionInLine = this.cursorPosition - (totalChars - lines[currentLine].length - 1)
+        // Если позиция вышла за пределы строки, перемещаемся вверх
+        if (charPositionInLine < 0) {
+            currentLine--
+            charPositionInLine = lines[currentLine].length + charPositionInLine
+        }
+        // Добавляем отступы по умолчанию относительно формы
+        let line = currentLine + 2
+        let char = charPositionInLine + 2
+        // Получить количество строк в буфере
+        // let line = this.text.split('\r').length + 1
+        // Получить количество символов в последней строке содержимого буфера с учетом положения курсора относительно общей длинны буфера
+        // let char = this.text.slice(this.text.lastIndexOf('\r') + 1).length - (this.text.length - this.cursorPosition) + 2
+        // Перемещаем нативный курсор в нужную позицию
+        process.stdout.write(`\x1B[${line};${char}H`)
+        return ''
+    }
+    // Метод отключения нативного курсора
     disableNativeCursor() {
         process.stdout.write('\x1B[?25l')
     }
+    // Метод отключения кастомного курсора
     enableNativeCursor() {
         process.stdout.write('\x1B[?25h')
     }
-    // Метод для получения текущей позиции курсора
+    // Метод получения текущей позиции курсора
     getCursorPosition() {
         return this.cursorPosition
     }
-    // Метод для получения текущего текста из буфера
+    // Метод получения текущего содержимого текста из буфера
     getText() {
         return this.text
     }
-    // Метод для установки нового текста в буфер
+    // Метод для изменения (перезаписи) текста в буфер
     setText(newText) {
         // Обновляем текст в буфере
         this.text = newText
@@ -236,17 +278,25 @@ class TextBuffer {
 
 const buffer = new TextBuffer()
 
-// Скрыть нативный курсор терминала при запуске
-buffer.disableNativeCursor()
+// Скрыть нативный курсор терминала для кастомного курсора (2)
+// buffer.disableNativeCursor()
+// Отключить магиние для нативного курсора
+process.stdout.write('\x1B[?12l')
 
-// Обновляем поле ввода текста каждые 700 миллисекунд для обновления кастомного курсора
-setInterval(() => {
-    inputBox.setValue(buffer.viewDisplayCursor())
-    screen.render()
-}, 500)
+// !!! Для нативного курсора сделать подписку на события для обоих удалений и перенос на новую строку, что бы не запускать метод каждую 1мс
+
+// Обновляем поле ввода текста для имитации мигания кастомного курсора или переключением фокуса из конца строки при перемещении для нативного курсора
+setInterval(
+    () => {
+        inputBox.setValue(buffer.viewDisplayCursor())
+        screen.render()
+  },
+  1 // Изменить на 500 для кастомного курсора (3)
+)
 
 // Обработка нажатий клавиш для управления буфером
 inputBox.on('keypress', function (ch, key) {
+    // Назначить методы перемещения курсора на стрелочки
     if (key.name === 'left') {
         buffer.moveLeft()
     }
@@ -256,7 +306,7 @@ inputBox.on('keypress', function (ch, key) {
     else if (key.name === 'backspace') {
         // Проверяем, что курсор не находится в начале содержимого буфера
         if (buffer.getCursorPosition() > 0) {
-            // Извлекаем текст с первого (нулевого) индекса по порядковый номер положения курсора без последней буквы (-1) и прибавляем остаток после курсора до конца
+            // Извлекаем текст с первого (нулевого) индекса по порядковый номер положения курсора без последней буквы для ее удаления (-1) и добавляем остаток после курсора до конца содержимого буфера
             const newText = buffer.getText().slice(0, buffer.getCursorPosition() - 1) + buffer.getText().slice(buffer.getCursorPosition())
             // Перемещаем курсор влево после удаления символа
             buffer.moveLeft()
@@ -290,6 +340,8 @@ inputBox.on('keypress', function (ch, key) {
     screen.render()
 })
 
+// --------------------------------------------------------------------------------------
+
 // Функция определения исходного языка
 function detectFromLanguage(text) {
     const russianPattern = /[а-яА-Я]/g
@@ -317,6 +369,8 @@ function detectToLanguage(lang) {
         return ''
     }
 }
+
+// ----------------------------------- API functions ------------------------------------
 
 // Функция перевода через Google API
 // https://github.com/matheuss/google-translate-api
@@ -480,9 +534,23 @@ async function handleTranslation() {
     }
 }
 
+// --------------------------------------------------------------------------------------
+
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     await handleTranslation()
+})
+
+// Обработка вставка текста из буфера обмена в поле ввода
+inputBox.key(['C-v'], function() {
+    clipboardy.read().then(text => {
+        // Добавляем текст из буфера обмена к текущему тексту
+        buffer.setText(buffer.getText() + text)
+        // Перемещаем курсор в конец текста
+        buffer.cursorPosition = buffer.getText().length
+        inputBox.setValue(buffer.viewDisplayCursor())
+        screen.render()
+    })
 })
 
 // Обработка копирования вывода в буфер обмена
@@ -529,19 +597,6 @@ inputBox.key(['C-r'], function() {
     screen.render()
     inputBox.focus()
 })
-
-// Вставка из буфера обмена
-inputBox.key(['C-v'], function() {
-    clipboardy.read().then(text => {
-        // Добавляем текст из буфера обмена к текущему тексту
-        buffer.setText(buffer.getText() + text)
-        // Перемещаем курсор в конец текста
-        buffer.cursorPosition = buffer.getText().length
-        inputBox.setValue(buffer.viewDisplayCursor())
-        screen.render()
-    })
-})
-
 
 // Обработчик событий клавиш для пролистывания экрана панелей вывода
 inputBox.key(['up', 'down'], function(ch, key) {
