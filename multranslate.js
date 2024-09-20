@@ -223,47 +223,46 @@ class TextBuffer {
         // Массив из строк (index) и их длинны (value) для определения номера строки текущего положения курсора
         let arrayLinesAndChars = []
         // Проверяем длинну всех строк в массиве
-        // for (let line of bufferLines) {
-        //     // Увеличиваем количество видимых строк
-        //     if (line.length > maxChars) {
-        //         // Получаем целое число строк максимальной длинны без остатка текущей строки
-        //         let viewCurrentLines = Math.floor(line.length / (maxChars))
-        //         // Добавляем дополнительные видимые строки к реальным
-        //         viewLines = viewLines + viewCurrentLines
-        //         // Формируем массив из основной (+1) и дополнительных строк
-        //         let viewCurrentLinesArray = Array(viewCurrentLines+1).fill().map((_, i) => i)
-        //         // Добавляем длинну всех строк в массив
-        //         for (let l of viewCurrentLinesArray) {
-        //             // Добавляем во все строки максимальное количество строк
-        //             if (l !== viewCurrentLinesArray[viewCurrentLinesArray.length-1]) {
-        //                 arrayLinesAndChars.push(maxChars)
-        //             }
-        //             // Добавляем остаток символов в последнюю строку
-        //             else {
-        //                 arrayLinesAndChars.push(line.length-(maxChars*viewCurrentLinesArray[viewCurrentLinesArray.length-1]))
-        //             }
-        //         }
-        //     }
-        //     else {
-        //         // Добавляем длинну строки в массив
-        //         arrayLinesAndChars.push(line.length)
-        //     }
-        // }
+        for (let line of bufferLines) {
+            // Увеличиваем количество видимых строк
+            if (line.length > maxChars) {
+                // Получаем целое число строк максимальной длинны без остатка текущей строки
+                let viewCurrentLines = Math.floor(line.length / (maxChars))
+                // Добавляем дополнительные видимые строки к реальным
+                viewLines = viewLines + viewCurrentLines
+                // Формируем массив из основной (+1) и дополнительных строк
+                let viewCurrentLinesArray = Array(viewCurrentLines+1).fill().map((_, i) => i)
+                // Добавляем длинну всех строк в массив
+                for (let l of viewCurrentLinesArray) {
+                    // Добавляем во все строки максимальное количество строк
+                    if (l !== viewCurrentLinesArray[viewCurrentLinesArray.length-1]) {
+                        arrayLinesAndChars.push(maxChars)
+                    }
+                    // Добавляем остаток символов в последнюю строку
+                    else {
+                        arrayLinesAndChars.push(line.length-(maxChars*viewCurrentLinesArray[viewCurrentLinesArray.length-1]))
+                    }
+                }
+            }
+            else {
+                // Добавляем длинну строки в массив
+                arrayLinesAndChars.push(line.length)
+            }
+        }
         // Определяем строку, на которой располагается курсор в текущей момент
-        // let lengthAllLines = 0
-        // let currentLine = 0
-        // for (let i in arrayLinesAndChars) {
-        //     lengthAllLines = lengthAllLines + arrayLinesAndChars[i]
-        //     if (this.cursorPosition <= lengthAllLines) {
-        //         currentLine = parseInt(i) + 1
-        //         break
-        //     }
-        // }
-        // if (currentLine === 0) {
-        //     currentLine = viewLines
-        // }
-        // Максимальное кол-во отображаемых строк | максимальная ширина | текущее количество выводимых строка | длинна символов в персой строке | длинна символов в второй строке | текущая строка курсора
-        outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${arrayLinesAndChars[1]} ${arrayLinesAndChars[2]}`)
+        let lengthCharsAllLines = 0 // длинна всех строк
+        let currentLine = 0 // текущая строка
+        // Прогоняем все строки сверху вниз
+        for (let i in arrayLinesAndChars) {
+            // Увеличиваем длинну строки
+            lengthCharsAllLines = lengthCharsAllLines + arrayLinesAndChars[i]
+            // Проверяем, что текущая позиция курсора (за вычетом длинны массива) меньше или равна текущей длинны строки с учетом предыдущих
+            if (this.cursorPosition - i <= lengthCharsAllLines) {
+                currentLine = parseInt(i) + 1
+                break
+            }
+        }
+        outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${currentLine}`)
         outputBox2.setContent(`${box.getScroll}`)
         outputBox3.setContent(`${box.getScrollHeight}`)
         outputBox4.setContent(`${box.getScrollPerc}`)
