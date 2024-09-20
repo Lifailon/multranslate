@@ -159,7 +159,7 @@ const outputBox4 = blessed.textarea({
 
 // Информация по навигации внизу формы
 const textInfo = blessed.text({
-    content: 'Ctrl+C: clear input, ⬆/⬇: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit', // ⬅/➡: input navigation
+    content: 'Ctrl+C: clear input, Ctrl+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit', // ⬅/➡: input navigation
     bottom: 0,
     left: 0,
     right: 0,
@@ -207,7 +207,7 @@ class TextBuffer {
     // Метод для отображения перемещения курсора
     viewDisplayCursor(box) {
         // Обновление кастомного курсора (1)
-        return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
+        // return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
         // Обновление нативного курсора (принимает параметр для скролинга поля ввода)
         return this.text.slice(0, this.cursorPosition) + this.navigateNativeCursor(box) + this.text.slice(this.cursorPosition)
     }
@@ -262,16 +262,29 @@ class TextBuffer {
                 break
             }
         }
+        // Текущее положение прокрутки
+        const getScroll = box.getScroll()
+        // Общее количество строк для прокрутки
+        const getScrollHeight = box.getScrollHeight()
+        // Проверяем, выходит ли курсор за пределы видимого диапазона строк
+        if (currentLine < getScroll) {
+            // Курсор выше текущей области видимости, прокручиваем вверх
+            box.scrollTo(currentLine);
+        } else if (currentLine >= getScroll + maxLines) {
+            // Курсор ниже видимой области, прокручиваем вниз
+            const newScrollPos = Math.min(currentLine - maxLines + 1, getScrollHeight);
+            box.scrollTo(newScrollPos);
+        }
         outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${currentLine}`)
-        outputBox2.setContent(`${box.getScroll}`)
-        outputBox3.setContent(`${box.getScrollHeight}`)
-        outputBox4.setContent(`${box.getScrollPerc}`)
+        outputBox2.setContent(`${box.getScroll()}`)
+        outputBox3.setContent(`${box.getScrollHeight()}`)
+        outputBox4.setContent(`${box.getScrollPerc()}`)
         return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
     }
     // Метод обновления нативного курсора
     navigateNativeCursor(box) {
         // Определяем ширину формы для виртуального переноса строки
-        const maxWidth = box.width - 5
+        const maxWidth = box.width - 4
         // Разбиваем текст на массив из строк
         let lines = this.text.split('\r')
         let wrappedLines = [] // Хранит строки с учетом переноса
@@ -287,23 +300,23 @@ class TextBuffer {
         // Определяем строку, в которой находится курсор буфера (cursorPosition)
         let currentLine = 0
         let totalChars = 0
-        for (let i = 0; i < wrappedLines.length; i++) {
+        for (let i in wrappedLines) {
             totalChars += wrappedLines[i].length + 1 // +1 учитывает символ \r
             if (this.cursorPosition < totalChars) {
-                currentLine = i
+                currentLine = Number(i)
                 break
             }
-        }
+        }        
         // Рассчитываем позицию курсора в пределах текущей строки
-        let charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length - 1)
+        let charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length -1)
         // Если позиция вышла за пределы строки, перемещаемся вверх
         if (charPositionInLine < 0) {
             currentLine--
             charPositionInLine = wrappedLines[currentLine].length + charPositionInLine
         }
-        // Узнаем максимальное количество отображаемых строк формы (-2 сверху и -1 снизу)
+        // Узнаем максимальное количество отображаемых строк формы
         const maxLine = box.height - 3
-        const bottomVisibleLine = maxLine + maxLine - 1
+        const bottomVisibleLine = maxLine + maxLine - 2
         // Прокручиваем вверх или вниз
         if (currentLine < maxLine) {
             box.scrollTo(Math.max(0, currentLine))
@@ -352,7 +365,7 @@ class TextBuffer {
 const buffer = new TextBuffer()
 
 // Скрыть нативный курсор терминала для кастомного курсора (2)
-buffer.disableNativeCursor()
+// buffer.disableNativeCursor()
 // Отключить магиние для нативного курсора
 process.stdout.write('\x1B[?12l')
 
@@ -362,7 +375,7 @@ setInterval(
         inputBox.setValue(buffer.viewDisplayCursor(inputBox))
         screen.render()
   },
-  500 // 1 для нативного курсора или изменить на 500 для кастомного курсора (3)
+  1 // 1 для нативного курсора или 500 для кастомного курсора (3)
 )
 
 // Обработка нажатий клавиш для управления буфером
@@ -676,7 +689,6 @@ inputBox.key(['C-r'], function() {
 inputBox.key(['C-up', 'C-down'], function(ch, key) {
     // Прокрутка вверх
     if (key.name === 'up') {
-        // inputBox.scroll(-1)
         outputBox1.scroll(-1)
         outputBox2.scroll(-1)
         outputBox3.scroll(-1)
@@ -684,7 +696,6 @@ inputBox.key(['C-up', 'C-down'], function(ch, key) {
     }
     // Прокрутка вниз
     else if (key.name === 'down') {
-        // inputBox.scroll(1)
         outputBox1.scroll(1)
         outputBox2.scroll(1)
         outputBox3.scroll(1)
