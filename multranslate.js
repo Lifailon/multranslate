@@ -209,7 +209,8 @@ class TextBuffer {
         // Обновление кастомного курсора (1)
         // return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
         // Обновление нативного курсора (принимает параметр для скролинга поля ввода)
-        return this.text.slice(0, this.cursorPosition) + this.navigateNativeCursor(box) + this.text.slice(this.cursorPosition)
+        this.navigateNativeCursor(box)
+        return this.text
     }
     // Метод обновления кастомного курсора
     navigateCustomCursor(box) {
@@ -269,11 +270,11 @@ class TextBuffer {
         // Проверяем, выходит ли курсор за пределы видимого диапазона строк
         if (currentLine < getScroll) {
             // Курсор выше текущей области видимости, прокручиваем вверх
-            box.scrollTo(currentLine);
+            box.scrollTo(currentLine)
         } else if (currentLine >= getScroll + maxLines) {
             // Курсор ниже видимой области, прокручиваем вниз
-            const newScrollPos = Math.min(currentLine - maxLines + 1, getScrollHeight);
-            box.scrollTo(newScrollPos);
+            const newScrollPos = Math.min(currentLine - maxLines + 1, getScrollHeight)
+            box.scrollTo(newScrollPos)
         }
         outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${currentLine}`)
         outputBox2.setContent(`${box.getScroll()}`)
@@ -284,32 +285,54 @@ class TextBuffer {
     // Метод обновления нативного курсора
     navigateNativeCursor(box) {
         // Определяем ширину формы для виртуального переноса строки
+        // const maxWidth = process.stdout.columns - 4
         const maxWidth = box.width - 4
         // Разбиваем текст на массив из строк
-        let lines = this.text.split('\r')
-        let wrappedLines = [] // Хранит строки с учетом переноса
+        let linesArray = this.text.split('\r')
+        // Массив для хранения строк с учетом переноса
+        // Массив для хранения строк с учетом переноса
+        let wrappedLines = []
+        // Массив для хранения информации о том, был ли перенос строки виртуальным
+        let isVirtualWrap = []
         // Разбиваем каждую строку на виртуальные строки по ширине box
-        lines.forEach(line => {
-            while (line.length > maxWidth) {
-                wrappedLines.push(line.slice(0, maxWidth))
-                line = line.slice(maxWidth)
+        for (const line of linesArray) {
+            let remainingLine = line
+            // Разбиваем строку на части, если длина превышает максимальную ширину формы
+            while (remainingLine.length > maxWidth) {
+                wrappedLines.push(remainingLine.slice(0, maxWidth))
+                isVirtualWrap.push(true) // Помечаем, что это был виртуальный перенос
+                remainingLine = remainingLine.slice(maxWidth)
             }
-            // Добавляем остаток строки
-            wrappedLines.push(line)
-        })
+            // Добавлять остаток строки
+            wrappedLines.push(remainingLine)
+            isVirtualWrap.push(false) // Это остаток строки, и здесь может быть настоящий перенос
+        }
         // Определяем строку, в которой находится курсор буфера (cursorPosition)
         let currentLine = 0
         let totalChars = 0
         for (let i in wrappedLines) {
-            totalChars += wrappedLines[i].length + 1 // +1 учитывает символ \r
+            // Если строка была перенесена виртуально, не добавлять +1 за символ новой строки
+            let lineLength = wrappedLines[i].length
+            if (!isVirtualWrap[i]) {
+                lineLength += 1 // +1 для символа \r только для реальных переносов
+            }
+            totalChars += lineLength
+            // Если позиция курсора попадает в текущую строку
             if (this.cursorPosition < totalChars) {
                 currentLine = Number(i)
                 break
             }
-        }        
+        }
         // Рассчитываем позицию курсора в пределах текущей строки
-        let charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length -1)
-        // Если позиция вышла за пределы строки, перемещаемся вверх
+        let charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length)
+        if (isVirtualWrap[currentLine]) {
+            // Для виртуальных строк (перенесенных) не нужно учитывать символ новой строки
+            charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length)
+        } else {
+            // Для реальных строк добавить -1, чтобы скорректировать расчёт
+            charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length - 1)
+        }
+        // Если позиция вышла за пределы строки, корректируем её
         if (charPositionInLine < 0) {
             currentLine--
             charPositionInLine = wrappedLines[currentLine].length + charPositionInLine
@@ -335,7 +358,7 @@ class TextBuffer {
         const char = charPositionInLine + 2
         // Перемещаем нативный курсор
         process.stdout.write(`\x1B[${line};${char}H`)
-        return ''
+        return
     }
     // Метод отключения нативного курсора
     disableNativeCursor() {
