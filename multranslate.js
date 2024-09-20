@@ -159,7 +159,7 @@ const outputBox4 = blessed.textarea({
 
 // Информация по навигации внизу формы
 const textInfo = blessed.text({
-    content: 'Ctrl+C: clear input, Ctrl+<Q/W/E/R>: copy to clipboard, ⬆/⬇: scroll output up/down, Escape: exit', // ⬅/➡: input cursor control
+    content: 'Ctrl+C: clear input, ⬆/⬇: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit', // ⬅/➡: input navigation
     bottom: 0,
     left: 0,
     right: 0,
@@ -207,35 +207,100 @@ class TextBuffer {
     // Метод для отображения перемещения курсора
     viewDisplayCursor(box) {
         // Обновление кастомного курсора (1)
-        // return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor() + this.text.slice(this.cursorPosition)
+        return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
         // Обновление нативного курсора (принимает параметр для скролинга поля ввода)
         return this.text.slice(0, this.cursorPosition) + this.navigateNativeCursor(box) + this.text.slice(this.cursorPosition)
     }
     // Метод обновления кастомного курсора
-    navigateCustomCursor() {
-        // return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2588' : ' '
+    navigateCustomCursor(box) {
+        // Текущее максимальное количество строк и длинна символов в строк с учетом размеров окна
+        const maxLines = box.height - 2
+        const maxChars = box.width - 4
+        // Разбиваем текст на массив из строк
+        const bufferLines = this.text.split('\r')
+        // Забираем реальное количество строк
+        let viewLines = bufferLines.length
+        // Массив из строк (index) и их длинны (value) для определения номера строки текущего положения курсора
+        let arrayLinesAndChars = []
+        // Проверяем длинну всех строк в массиве
+        // for (let line of bufferLines) {
+        //     // Увеличиваем количество видимых строк
+        //     if (line.length > maxChars) {
+        //         // Получаем целое число строк максимальной длинны без остатка текущей строки
+        //         let viewCurrentLines = Math.floor(line.length / (maxChars))
+        //         // Добавляем дополнительные видимые строки к реальным
+        //         viewLines = viewLines + viewCurrentLines
+        //         // Формируем массив из основной (+1) и дополнительных строк
+        //         let viewCurrentLinesArray = Array(viewCurrentLines+1).fill().map((_, i) => i)
+        //         // Добавляем длинну всех строк в массив
+        //         for (let l of viewCurrentLinesArray) {
+        //             // Добавляем во все строки максимальное количество строк
+        //             if (l !== viewCurrentLinesArray[viewCurrentLinesArray.length-1]) {
+        //                 arrayLinesAndChars.push(maxChars)
+        //             }
+        //             // Добавляем остаток символов в последнюю строку
+        //             else {
+        //                 arrayLinesAndChars.push(line.length-(maxChars*viewCurrentLinesArray[viewCurrentLinesArray.length-1]))
+        //             }
+        //         }
+        //     }
+        //     else {
+        //         // Добавляем длинну строки в массив
+        //         arrayLinesAndChars.push(line.length)
+        //     }
+        // }
+        // Определяем строку, на которой располагается курсор в текущей момент
+        // let lengthAllLines = 0
+        // let currentLine = 0
+        // for (let i in arrayLinesAndChars) {
+        //     lengthAllLines = lengthAllLines + arrayLinesAndChars[i]
+        //     if (this.cursorPosition <= lengthAllLines) {
+        //         currentLine = parseInt(i) + 1
+        //         break
+        //     }
+        // }
+        // if (currentLine === 0) {
+        //     currentLine = viewLines
+        // }
+        // Максимальное кол-во отображаемых строк | максимальная ширина | текущее количество выводимых строка | длинна символов в персой строке | длинна символов в второй строке | текущая строка курсора
+        outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${arrayLinesAndChars[1]} ${arrayLinesAndChars[2]}`)
+        outputBox2.setContent(`${box.getScroll}`)
+        outputBox3.setContent(`${box.getScrollHeight}`)
+        outputBox4.setContent(`${box.getScrollPerc}`)
         return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
     }
     // Метод обновления нативного курсора
     navigateNativeCursor(box) {
-        // Разбиваем текст на строки (формируем массив из строк)
+        // Определяем ширину формы для виртуального переноса строки
+        const maxWidth = box.width - 5
+        // Разбиваем текст на массив из строк
         let lines = this.text.split('\r')
+        let wrappedLines = [] // Хранит строки с учетом переноса
+        // Разбиваем каждую строку на виртуальные строки по ширине box
+        lines.forEach(line => {
+            while (line.length > maxWidth) {
+                wrappedLines.push(line.slice(0, maxWidth))
+                line = line.slice(maxWidth)
+            }
+            // Добавляем остаток строки
+            wrappedLines.push(line)
+        })
         // Определяем строку, в которой находится курсор буфера (cursorPosition)
         let currentLine = 0
         let totalChars = 0
-        for (let i = 0; i < lines.length; i++) {
-            totalChars += lines[i].length + 1 // учитывает +1 символ переноса строки (\r)
+        for (let i = 0; i < wrappedLines.length; i++) {
+            totalChars += wrappedLines[i].length + 1 // +1 учитывает символ \r
             if (this.cursorPosition < totalChars) {
                 currentLine = i
                 break
             }
         }
         // Рассчитываем позицию курсора в пределах текущей строки
-        let charPositionInLine = this.cursorPosition - (totalChars - lines[currentLine].length - 1)
+        let charPositionInLine = this.cursorPosition - (totalChars - wrappedLines[currentLine].length - 1)
         // Если позиция вышла за пределы строки, перемещаемся вверх
         if (charPositionInLine < 0) {
             currentLine--
-            charPositionInLine = lines[currentLine].length + charPositionInLine
+            charPositionInLine = wrappedLines[currentLine].length + charPositionInLine
         }
         // Узнаем максимальное количество отображаемых строк формы (-2 сверху и -1 снизу)
         const maxLine = box.height - 3
@@ -248,13 +313,12 @@ class TextBuffer {
         }
         // Синхронизируем нативный курсор с текущей позицией
         const visibleBase = box.childBase || 0
-        // Учитываем смещение видимой области
         const adjustedLine = currentLine - visibleBase
         // Ограничиваем текущую строку в пределах видимой области
         if (adjustedLine >= maxLine) {
             currentLine = maxLine - 1
         }
-        // Добавляем отступы по умолчанию (по два сверху и слева), чтобы они не выходили за пределы формы
+        // Добавляем отступы по умолчанию (по два сверху и слева), чтобы курсор не выходил за пределы формы
         const line = adjustedLine + 2
         const char = charPositionInLine + 2
         // Перемещаем нативный курсор
@@ -289,7 +353,7 @@ class TextBuffer {
 const buffer = new TextBuffer()
 
 // Скрыть нативный курсор терминала для кастомного курсора (2)
-// buffer.disableNativeCursor()
+buffer.disableNativeCursor()
 // Отключить магиние для нативного курсора
 process.stdout.write('\x1B[?12l')
 
@@ -299,7 +363,7 @@ setInterval(
         inputBox.setValue(buffer.viewDisplayCursor(inputBox))
         screen.render()
   },
-  1 // Изменить на 500 для кастомного курсора (3)
+  500 // 1 для нативного курсора или изменить на 500 для кастомного курсора (3)
 )
 
 // Обработка нажатий клавиш для управления буфером
@@ -546,7 +610,8 @@ async function handleTranslation() {
 
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
-    await handleTranslation()
+    // Debug (отключить для отладки интерфейса)
+    // await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
@@ -608,10 +673,11 @@ inputBox.key(['C-r'], function() {
     inputBox.focus()
 })
 
-// Обработчик событий клавиш для пролистывания экрана панелей вывода
-inputBox.key(['up', 'down'], function(ch, key) {
+// Обработчик событий клавиш для пролистывания экрана панелей вывода: Ctrl+<Up/Down>
+inputBox.key(['C-up', 'C-down'], function(ch, key) {
     // Прокрутка вверх
     if (key.name === 'up') {
+        // inputBox.scroll(-1)
         outputBox1.scroll(-1)
         outputBox2.scroll(-1)
         outputBox3.scroll(-1)
@@ -619,6 +685,7 @@ inputBox.key(['up', 'down'], function(ch, key) {
     }
     // Прокрутка вниз
     else if (key.name === 'down') {
+        // inputBox.scroll(1)
         outputBox1.scroll(1)
         outputBox2.scroll(1)
         outputBox3.scroll(1)
