@@ -10,7 +10,9 @@
     "DeepL",
     "DeepLX",
     "MyMemory",
-    "Reverso"
+    "Reverso",
+    "Cursor",
+    "Custom-Cursor"
   ],
   "author": "Lifailon",
   "license": "MIT",
@@ -18,10 +20,11 @@
     "type": "git",
     "url": "https://github.com/Lifailon/multranslate"
   },
-  "main": "multranslate.js",
+  "main": "multranslate-custom-cursor.js",
   "type": "module",
   "scripts": {
-    "start": "node multranslate.js"
+    "start": "node multranslate-custom-cursor.js",
+    "dev": "node multranslate-native-cursor.js"
   },
   "dependencies": {
     "axios": "^1.7.5",
@@ -29,7 +32,7 @@
     "clipboardy": "^4.0.0"
   },
   "bin": {
-    "multranslate": "multranslate.js"
+    "multranslate": "multranslate-custom-cursor.js"
   },
   "pkg": {
     "assets": [
