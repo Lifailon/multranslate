@@ -207,14 +207,19 @@ class TextBuffer {
     viewDisplayCursor(box) {
         // Обновление позиции кастомного курсора без автоскролинга
         return this.text.slice(0, this.cursorPosition) + '\u2591' + this.text.slice(this.cursorPosition)
-        // Обновление кастомного курсора
-        return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
-        // Обновление нативного курсора
+        // Обновление кастомного курсора c использованием мигания курсора (4) (! Пробел расценивается как перенос в конце строки)
+        let cursor = (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
+        return this.text.slice(0, this.cursorPosition) + cursor + this.text.slice(this.cursorPosition)
+        // Обновление нативного курсора (! Пробел в конце строки до 10 символов переносит на новую строку, что сбивает положение нативного курсора)
         this.navigateNativeCursor(box)
         return this.text
     }
-    // Метод обновления кастомного курсора
-    navigateCustomCursor(box) {
+    // Фиксируем положение скролла
+    viewDisplayScroll(box) {
+        return this.navigateScroll(box)
+    }
+    // Метод автонавигации скролла для кастомного курсора
+    navigateScroll(box) {
         // Текущее максимальное количество строк и длинна символов в строк с учетом размеров окна
         const maxLines = box.height - 2
         const maxChars = box.width - 4
@@ -264,26 +269,24 @@ class TextBuffer {
                 break
             }
         }
-        // Текущее положение прокрутки
+        // Текущее положение скролла
         const getScroll = box.getScroll()
-        // Общее количество строк для прокрутки
+        // Общее количество строк для скролла
         const getScrollHeight = box.getScrollHeight()
         // Проверяем, выходит ли курсор за пределы видимого диапазона строк
-        if (currentLine < getScroll) {
-            // Курсор выше текущей области видимости, прокручиваем вверх
-            box.scrollTo(currentLine)
+        if (currentLine <= getScroll) {
+            // Если курсор выше или равен текущей области видимости, поднимаем вверх на 2 (-3)
+            box.scrollTo(currentLine - 3)
         } else if (currentLine >= (getScroll + maxLines)) {
-            // Курсор ниже видимой области, прокручиваем вниз
+            // Опускаем вниз
             const newScrollPos = Math.min(currentLine - maxLines + 1, getScrollHeight)
             box.scrollTo(newScrollPos)
         }
-        outputBox1.setContent(`${maxLines} ${maxChars} | ${viewLines} ${currentLine}`)
-        outputBox2.setContent(`${box.getScroll()}`)
-        outputBox3.setContent(`${box.getScrollHeight()}`)
-        outputBox4.setContent(`${box.getScrollPerc()}`)
-        // Включить обновление курсора (3)
-        // return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
-        return '\u2591'
+        // Debug output
+        // outputBox1.setContent(`${maxLines} ${maxChars} | ${viewLines} ${currentLine}`)
+        // outputBox2.setContent(`${box.getScroll()}`)
+        // outputBox3.setContent(`${box.getScrollHeight()}`)
+        // outputBox4.setContent(`${box.getScrollPerc()}`)
     }
     // Метод обновления нативного курсора
     navigateNativeCursor(box) {
@@ -343,7 +346,7 @@ class TextBuffer {
         // Узнаем максимальное количество отображаемых строк формы
         const maxLine = box.height - 3
         const bottomVisibleLine = maxLine + maxLine - 2
-        // Прокручиваем вверх или вниз
+        // Скроллим вверх вверх или вниз
         if (currentLine < maxLine) {
             box.scrollTo(Math.max(0, currentLine))
         } else if (currentLine > bottomVisibleLine) {
@@ -394,7 +397,7 @@ process.stdout.write('\x1B[?12l')
 // Скрыть нативный курсор терминала для кастомного курсора (2)
 buffer.disableNativeCursor()
 
-// Обновляем поле ввода текста для имитации мигания кастомного курсора или смена фокуса при перемещении для нативного курсора
+// Обновляем поле ввода текста для имитации мигания кастомного курсора или смена фокуса при перемещении для нативного курсора (4)
 // setInterval(
 //     () => {
 //         inputBox.setValue(buffer.viewDisplayCursor(inputBox))
@@ -456,14 +459,16 @@ inputBox.on('keypress', function (ch, key) {
     let currentScrollIndex = inputBox.getScroll()
     // Обновляем поле ввода текста
     inputBox.setValue(buffer.viewDisplayCursor(inputBox))
-    // Если это не скролл вручную, скролим назад к текущей позиции после обновления текста
-    if (key.name !== 'up' && key.name !== 'down') {
-        inputBox.scrollTo(currentScrollIndex)
-        // Если длина буфера и положение курсора совпадают, скролим в самый низ
-        if (buffer.getText().length === buffer.getCursorPosition()) {
-            inputBox.setScrollPerc(100)
-        }
-    }
+    // Ручной скролинг, проверяем, если это не скролл вручную, скролим назад к текущей позиции после обновления текста
+    // if (key.name !== 'up' && key.name !== 'down') {
+    //     inputBox.scrollTo(currentScrollIndex)
+    //     // Если длина буфера и положение курсора совпадают, скролим в самый низ
+    //     if (buffer.getText().length === buffer.getCursorPosition()) {
+    //         inputBox.setScrollPerc(100)
+    //     }
+    // }
+    // Автоматический скроллинг
+    buffer.viewDisplayScroll(inputBox)
     screen.render()
 })
 
@@ -666,7 +671,7 @@ async function handleTranslation() {
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить для отладки интерфейса)
-    await handleTranslation()
+    // await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
@@ -730,14 +735,14 @@ inputBox.key(['C-r'], function() {
 
 // Обработчик событий клавиш для пролистывания экрана панелей вывода: Ctrl+<Up/Down>
 inputBox.key(['C-up', 'C-down'], function(ch, key) {
-    // Прокрутка вверх
+    // Скроллим вверх
     if (key.name === 'up') {
         outputBox1.scroll(-1)
         outputBox2.scroll(-1)
         outputBox3.scroll(-1)
         outputBox4.scroll(-1)
     }
-    // Прокрутка вниз
+    // Скроллим вниз
     else if (key.name === 'down') {
         outputBox1.scroll(1)
         outputBox2.scroll(1)
