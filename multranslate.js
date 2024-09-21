@@ -182,17 +182,17 @@ screen.append(textInfo)
 
 // Класс для управления текстовым буфером и курсором
 class TextBuffer {
+    // Инициализация свойств объекта
     constructor() {
-        // Инициализация пустой строки для текста
+        // Содержимое буфера
         this.text = ''
-        // Начальная позицию курсора
+        // Начальная позиция курсора
         this.cursorPosition = 0
     }
     // Метод для перемещения курсора влево
     moveLeft() {
         // Проверяем, что курсор не находится в начале текста
         if (this.cursorPosition > 0) {
-            // Уменьшаем позицию курсора на 1
             this.cursorPosition--
         }
     }
@@ -200,15 +200,16 @@ class TextBuffer {
     moveRight() {
         // Проверяем, что курсор не находится в конце текста
         if (this.cursorPosition < this.text.length) {
-            // Увеличиваем позицию курсора на 1
             this.cursorPosition++
         }
     }
     // Метод для отображения перемещения курсора
     viewDisplayCursor(box) {
-        // Обновление кастомного курсора (1)
-        // return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
-        // Обновление нативного курсора (принимает параметр для скролинга поля ввода)
+        // Обновление позиции кастомного курсора без автоскролинга
+        return this.text.slice(0, this.cursorPosition) + '\u2591' + this.text.slice(this.cursorPosition)
+        // Обновление кастомного курсора
+        return this.text.slice(0, this.cursorPosition) + this.navigateCustomCursor(box) + this.text.slice(this.cursorPosition)
+        // Обновление нативного курсора
         this.navigateNativeCursor(box)
         return this.text
     }
@@ -225,13 +226,13 @@ class TextBuffer {
         let arrayLinesAndChars = []
         // Проверяем длинну всех строк в массиве
         for (let line of bufferLines) {
-            // Увеличиваем количество видимых строк
+            // Увеличиваем количество видимых строк, если длина реальной строки больше максимальной
             if (line.length > maxChars) {
                 // Получаем целое число строк максимальной длинны без остатка текущей строки
                 let viewCurrentLines = Math.floor(line.length / (maxChars))
                 // Добавляем дополнительные видимые строки к реальным
                 viewLines = viewLines + viewCurrentLines
-                // Формируем массив из основной (+1) и дополнительных строк
+                // Формируем массив количества строк из основной (+1) и дополнительных строк
                 let viewCurrentLinesArray = Array(viewCurrentLines+1).fill().map((_, i) => i)
                 // Добавляем длинну всех строк в массив
                 for (let l of viewCurrentLinesArray) {
@@ -271,16 +272,18 @@ class TextBuffer {
         if (currentLine < getScroll) {
             // Курсор выше текущей области видимости, прокручиваем вверх
             box.scrollTo(currentLine)
-        } else if (currentLine >= getScroll + maxLines) {
+        } else if (currentLine >= (getScroll + maxLines)) {
             // Курсор ниже видимой области, прокручиваем вниз
             const newScrollPos = Math.min(currentLine - maxLines + 1, getScrollHeight)
             box.scrollTo(newScrollPos)
         }
-        outputBox1.setContent(`${maxLines} ${maxChars} ${viewLines} ${arrayLinesAndChars[0]} ${currentLine}`)
+        outputBox1.setContent(`${maxLines} ${maxChars} | ${viewLines} ${currentLine}`)
         outputBox2.setContent(`${box.getScroll()}`)
         outputBox3.setContent(`${box.getScrollHeight()}`)
         outputBox4.setContent(`${box.getScrollPerc()}`)
-        return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
+        // Включить обновление курсора (3)
+        // return (this.blinkingSymbolVisible = !this.blinkingSymbolVisible) ? '\u2591' : ' '
+        return '\u2591'
     }
     // Метод обновления нативного курсора
     navigateNativeCursor(box) {
@@ -364,7 +367,7 @@ class TextBuffer {
     disableNativeCursor() {
         process.stdout.write('\x1B[?25l')
     }
-    // Метод отключения кастомного курсора
+    // Метод Включения нативного курсора
     enableNativeCursor() {
         process.stdout.write('\x1B[?25h')
     }
@@ -372,13 +375,12 @@ class TextBuffer {
     getCursorPosition() {
         return this.cursorPosition
     }
-    // Метод получения текущего содержимого текста из буфера
+    // Метод получения содержимого текста из буфера
     getText() {
         return this.text
     }
     // Метод для изменения (перезаписи) текста в буфер
     setText(newText) {
-        // Обновляем текст в буфере
         this.text = newText
         // Корректируем позицию курсора, чтобы она не выходила за пределы нового текста
         this.cursorPosition = Math.min(this.cursorPosition, this.text.length)
@@ -387,19 +389,19 @@ class TextBuffer {
 
 const buffer = new TextBuffer()
 
-// Скрыть нативный курсор терминала для кастомного курсора (2)
-// buffer.disableNativeCursor()
-// Отключить магиние для нативного курсора
+// Отключить магиние нативного курсора
 process.stdout.write('\x1B[?12l')
+// Скрыть нативный курсор терминала для кастомного курсора (2)
+buffer.disableNativeCursor()
 
-// Обновляем поле ввода текста для имитации мигания кастомного курсора или переключением фокуса из конца строки при перемещении для нативного курсора
-setInterval(
-    () => {
-        inputBox.setValue(buffer.viewDisplayCursor(inputBox))
-        screen.render()
-  },
-  1 // 1 для нативного курсора или 500 для кастомного курсора (3)
-)
+// Обновляем поле ввода текста для имитации мигания кастомного курсора или смена фокуса при перемещении для нативного курсора
+// setInterval(
+//     () => {
+//         inputBox.setValue(buffer.viewDisplayCursor(inputBox))
+//         screen.render()
+//   },
+//   500 // 1 для нативного курсора или 500 для кастомного курсора (3)
+// )
 
 // Обработка нажатий клавиш для управления буфером
 inputBox.on('keypress', function (ch, key) {
@@ -409,6 +411,14 @@ inputBox.on('keypress', function (ch, key) {
     }
     else if (key.name === 'right') {
         buffer.moveRight()
+    }
+    // Поднимаем поле ввода текста вверх
+    else if (key.name === 'up') {
+        inputBox.scroll(-1)
+    }
+    // Опускаем поле ввода текста вниз
+    else if (key.name === 'down') {
+        inputBox.scroll(1)
     }
     else if (key.name === 'backspace') {
         // Проверяем, что курсор не находится в начале содержимого буфера
@@ -442,8 +452,18 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор вправо после добавления символа
         buffer.moveRight()
     }
+    // Фиксируем текущую позицию скролла
+    let currentScrollIndex = inputBox.getScroll()
     // Обновляем поле ввода текста
     inputBox.setValue(buffer.viewDisplayCursor(inputBox))
+    // Если это не скролл вручную, скролим назад к текущей позиции после обновления текста
+    if (key.name !== 'up' && key.name !== 'down') {
+        inputBox.scrollTo(currentScrollIndex)
+        // Если длина буфера и положение курсора совпадают, скролим в самый низ
+        if (buffer.getText().length === buffer.getCursorPosition()) {
+            inputBox.setScrollPerc(100)
+        }
+    }
     screen.render()
 })
 
@@ -646,7 +666,7 @@ async function handleTranslation() {
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить для отладки интерфейса)
-    // await handleTranslation()
+    await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
