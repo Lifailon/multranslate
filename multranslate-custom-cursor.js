@@ -157,9 +157,12 @@ const outputBox4 = blessed.textarea({
     }
 })
 
+const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
+// ⬆/⬇: scroll output, ⬅/➡: input navigation, Ctrl+<⬅/➡>: fast navigation
+
 // Информация по навигации внизу формы
 const textInfo = blessed.text({
-    content: 'Ctrl+C: clear input, Ctrl+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit', // ⬅/➡: input navigation
+    content: infoText, 
     bottom: 0,
     left: 0,
     right: 0,
@@ -273,10 +276,77 @@ class TextBuffer {
         }
         // Debug output
         // outputBox1.setContent(`${maxLines} ${maxChars} | ${viewLines} ${currentLine}`)
-        // outputBox2.setContent(`${box.getScroll()}`)
-        // outputBox3.setContent(`${box.getScrollHeight()}`)
-        // outputBox4.setContent(`${box.getScrollPerc()}`)
-        return
+        // outputBox2.setContent(box.getScroll())
+        // outputBox3.setContent(box.getScrollHeight())
+        // outputBox4.setContent(box.getScrollPerc())
+    }
+    // Метод быстрого перемещения курсора через словосочетания
+    navigateFastCursor(type) {
+        // Разбиваем буфер на массив из букв
+        let charsArray = this.text.split('\r').join(' ').split('')
+        if (type === 'left' || type === 'back') {
+            if (this.cursorPosition > 0) {
+                // Обратный массив от начала буфера до положения курсора
+                const charsBeforCursorArray = charsArray.slice(0,this.cursorPosition).reverse()
+                let count = charsBeforCursorArray.length
+                for (let char of charsBeforCursorArray) {
+                    // Уменьшаем позицию курсора, если это не пробел
+                    if (char !== ' ') {
+                        count--
+                    }
+                    // Уменьшаем позицию, если курсора уже находится на пробеле
+                    else if (count === charsBeforCursorArray.length) {
+                        count--
+                    }
+                    // Уменьшаем позицию, если следующий символ в строке пробел
+                    else if (char === ' ' && charsArray[count] === ' ') {
+                        count--
+                    }
+                    else {
+                        if (count <= 0) {
+                            count = 0
+                        } else {
+                            count - 1
+                        }
+                        break
+                    }
+                }
+                // Отдаем значение смещения для удаления словосочетания
+                if (type === 'back') {
+                    return charsBeforCursorArray.length - count
+                }
+                else {
+                    this.cursorPosition = count
+                }
+            }
+        }
+        else if (type === 'right') {
+            if (this.cursorPosition < this.text.length) {
+                // Массив от позиции курсора до конца текста
+                const charsBeforCursorArray = charsArray.slice(this.cursorPosition)
+                let count = this.cursorPosition
+                for (let char of charsBeforCursorArray) {
+                    if (char !== ' ') {
+                        count++
+                    }
+                    else if (count === this.cursorPosition) {
+                        count++
+                    }
+                    else if (char === ' ' && charsArray[count-1] === ' ') {
+                        count++
+                    }
+                    else {
+                        if (count >= this.text.length) {
+                            count = this.text.length
+                        } else {
+                            count + 1
+                        }
+                        break
+                    }
+                }
+                this.cursorPosition = count
+            }
+        }
     }
     // Метод отключения нативного курсора
     disableNativeCursor() {
@@ -315,28 +385,45 @@ buffer.disableNativeCursor()
 // Обработка нажатий клавиш для управления буфером
 inputBox.on('keypress', function (ch, key) {
     // Перевести курсор в самое начало или конец текст
-    if (key.name === 'left' && key.ctrl === true) {
+    if (key.name === 'a' && key.ctrl === true) {
         buffer.setCursorPosition(0)
     }
-    else if (key.name === 'right' && key.ctrl === true) {
+    else if (key.name === 'd' && key.ctrl === true) {
         buffer.setCursorPosition(buffer.getText().length)
     }
+    // Быстрая навигация курсора через слова
+    else if (key.name === 'left' && key.ctrl === true) {
+        buffer.navigateFastCursor('left')
+    }
+    else if (key.name === 'right' && key.ctrl === true) {
+        buffer.navigateFastCursor('right')
+    }
     // Назначить методы перемещения курсора на стрелочки
-    else if (key.name === 'left') {
+    else if (key.name === 'left' && key.ctrl === false) {
         buffer.moveLeft()
     }
-    else if (key.name === 'right') {
+    else if (key.name === 'right' && key.ctrl === false) {
         buffer.moveRight()
     }
-    // Поднимаем поле ввода текста вверх
-    else if (key.name === 'up') {
-        inputBox.scroll(-1)
-    }
+    // Поднимаем поле ввода текста вверх для ручного скроллинга
+    // else if (key.name === 'up') {
+    //     inputBox.scroll(-1)
+    // }
     // Опускаем поле ввода текста вниз
-    else if (key.name === 'down') {
-        inputBox.scroll(1)
+    // else if (key.name === 'down') {
+    //     inputBox.scroll(1)
+    // }
+    // Удалить словосочетание перед курсором
+    else if (key.name === 'delete' && key.ctrl === true) {
+        const backCursorPosition = buffer.navigateFastCursor('back')
+        if (buffer.getCursorPosition() > 0) {
+            const newText = buffer.getText().slice(0, buffer.getCursorPosition() - backCursorPosition) + buffer.getText().slice(buffer.getCursorPosition())
+            buffer.setCursorPosition(buffer.getCursorPosition() - backCursorPosition)
+            buffer.setText(newText)
+        }
     }
-    else if (key.name === 'backspace') {
+    // Удалить символ перед курсором
+    else if (key.name === 'backspace' && key.ctrl === false) {
         // Проверяем, что курсор не находится в начале содержимого буфера
         if (buffer.getCursorPosition() > 0) {
             // Извлекаем текст с первого (нулевого) индекса по порядковый номер положения курсора без последней буквы для ее удаления (-1) и добавляем остаток после курсора до конца содержимого буфера
@@ -347,6 +434,8 @@ inputBox.on('keypress', function (ch, key) {
             buffer.setText(newText)
         }
     }
+    
+    // Удалить символ после курсором
     else if (key.name === 'delete') {
         // Проверяем, что курсор не находится в конце содержимого буфера
         if (buffer.getCursorPosition() < buffer.getText().length) {
@@ -651,8 +740,9 @@ inputBox.key(['C-r'], function() {
     inputBox.focus()
 })
 
-// Обработчик событий клавиш для пролистывания экрана панелей вывода: Ctrl+<Up/Down>
-inputBox.key(['C-up', 'C-down'], function(ch, key) {
+// Обработчик событий клавиш для пролистывания экрана панелей вывода: <Up/Down> или Ctrl+<Up/Down>
+// inputBox.key(['C-up', 'C-down'], function(ch, key) {
+inputBox.key(['up', 'down'], function(ch, key) {
     // Скроллим вверх
     if (key.name === 'up') {
         outputBox1.scroll(-1)
