@@ -678,7 +678,7 @@ async function handleTranslation() {
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить для отладки интерфейса)
-    // await handleTranslation()
+    await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
