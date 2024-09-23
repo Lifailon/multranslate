@@ -157,8 +157,9 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
-// ⬆/⬇: scroll output, ⬅/➡: input navigation, Ctrl+<⬅/➡>: fast navigation
+const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Ctrl+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
+// Shift+<⬆/⬇> - scroll input, <⬅/➡/⬆/⬇>: input navigation, Ctrl+<⬅/➡>: fast navigation, Ctrl+Del: delete word before cursor
+// Enter: translate
 
 // Информация по навигации внизу формы
 const textInfo = blessed.text({
@@ -348,6 +349,71 @@ class TextBuffer {
             }
         }
     }
+    // Метод навигации вверх или вниз
+    navigateUpDown(type) {
+        // Массив из строк
+        const bufferLines = this.text.split('\r')
+        // Массив из длинны всех строк
+        let linesArray = []
+        for (let line of bufferLines) {
+            linesArray.push(line.length)
+        }
+        // Счетчик начинается с длинны первой строки
+        let charsArray = linesArray[0]
+        let cursorLine = 1
+        let charToLine = 0
+        // Фиксируем на какой строке находится курсор
+        for (let lineIndex in linesArray) {
+            // Проверяем, что курсор находится в пределах текущей строки
+            if (this.cursorPosition <= charsArray) {
+                break
+            }
+            else {
+                // Фиксируем позицию курсора в текущей строке
+                charToLine = this.cursorPosition - charsArray - 1
+                // Увеличиваем длинну символов курсора на длинну символов следующей строки + длинна одного символа переноса строки
+                charsArray += linesArray[parseInt(lineIndex) + 1] + 1
+                // Увеличиваем счетчик строки
+                cursorLine++
+            }
+        }
+        let positionToLine
+        if (type === 'up') {
+            if (cursorLine > 1) {
+                // Фиксируем позицию в строке выше
+                if (linesArray[cursorLine-2] >= charToLine) {
+                    positionToLine = charToLine
+                } else {
+                    positionToLine = linesArray[cursorLine-2]
+                }
+                const linesArraySlice = linesArray.slice(0, cursorLine-2)
+                for (let l of linesArraySlice) {
+                    positionToLine = positionToLine + l + 1
+                }
+                this.cursorPosition = positionToLine
+            }
+        }
+        else if (type === 'down') {
+            if (cursorLine < bufferLines.length) {
+                // Если первая строка, обновляем значение текущей позиции в строке
+                if (cursorLine === 1) {
+                    charToLine = this.cursorPosition
+                }
+                // Фиксируем позицию в строке ниже
+                if (linesArray[cursorLine] >= charToLine) {
+                    positionToLine = charToLine
+                }
+                else {
+                    positionToLine = linesArray[cursorLine]
+                }
+                const linesArraySlice = linesArray.slice(0, cursorLine)
+                for (let l of linesArraySlice) {
+                    positionToLine = positionToLine + l + 1
+                }
+                this.cursorPosition = positionToLine
+            }
+        }
+    }
     // Метод отключения нативного курсора
     disableNativeCursor() {
         process.stdout.write('\x1B[?25l')
@@ -406,13 +472,20 @@ inputBox.on('keypress', function (ch, key) {
         buffer.moveRight()
     }
     // Поднимаем поле ввода текста вверх для ручного скроллинга
-    // else if (key.name === 'up') {
-    //     inputBox.scroll(-1)
-    // }
+    else if (key.name === 'up' && key.shift === true) {
+        inputBox.scroll(-1)
+    }
     // Опускаем поле ввода текста вниз
-    // else if (key.name === 'down') {
-    //     inputBox.scroll(1)
-    // }
+    else if (key.name === 'down' && key.shift === true) {
+        inputBox.scroll(1)
+    }
+    // Навигация курсора между строками
+    else if (key.name === 'up') {
+        buffer.navigateUpDown('up')
+    }
+    else if (key.name === 'down') {
+        buffer.navigateUpDown('down')
+    }
     // Удалить словосочетание перед курсором
     else if (key.name === 'delete' && key.ctrl === true) {
         const backCursorPosition = buffer.navigateFastCursor('back')
@@ -434,7 +507,6 @@ inputBox.on('keypress', function (ch, key) {
             buffer.setText(newText)
         }
     }
-    
     // Удалить символ после курсором
     else if (key.name === 'delete') {
         // Проверяем, что курсор не находится в конце содержимого буфера
@@ -442,6 +514,12 @@ inputBox.on('keypress', function (ch, key) {
             const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + buffer.getText().slice(buffer.getCursorPosition() + 1)
             buffer.setText(newText)
         }
+    }
+    // Переопределяем нажатие Enter, для добавления 4 пробелов в буффер
+    else if (key.name === 'tab') {
+        const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + '    ' + buffer.getText().slice(buffer.getCursorPosition())
+        buffer.setCursorPosition(buffer.getCursorPosition() + 4)
+        buffer.setText(newText)
     }
     // Переопределяем нажатие Enter, не добавляя дополнительный символ переноса строки
     else if (key.name === 'enter') {
@@ -457,25 +535,13 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор вправо после добавления символа
         buffer.moveRight()
     }
-    // Фиксируем текущую позицию для ручного скроллинга
-    let currentScrollIndex = inputBox.getScroll()
-    // Обновляем поле ввода текста
-    inputBox.setValue(buffer.viewDisplayCursor())
-    // Включить ручной скроллинг
-    // if (key.name !== 'up' && key.name !== 'down') {
-    //     // Если это не скролл вручную, скролим назад к текущей позиции после обновления текста
-    //     inputBox.scrollTo(currentScrollIndex)
-    //     // Если длина буфера и положение курсора совпадают, скролим в самый низ
-    //     if (buffer.getText().length === buffer.getCursorPosition()) {
-    //         inputBox.setScrollPerc(100)
-    //     }
-    //     // Если курсор в самом начале буфера, поднимаем в самый вверх
-    //     else if (buffer.getCursorPosition() === 0) {
-    //         inputBox.setScrollPerc(1)
-    //     }
-    // }
-    // Включить автоматический скроллинг
-    buffer.navigateScroll(inputBox)
+    // Добавить ручной скроллинг
+    if (!((key.name === 'up' && key.shift === true) || (key.name === 'down' && key.shift === true))) {
+        // Обновляем поле ввода текста
+        inputBox.setValue(buffer.viewDisplayCursor())
+        // Включить автоматический скроллинг
+        buffer.navigateScroll(inputBox)
+    }
     screen.render()
 })
 
@@ -678,7 +744,7 @@ async function handleTranslation() {
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить для отладки интерфейса)
-    await handleTranslation()
+    // await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
@@ -740,18 +806,17 @@ inputBox.key(['C-r'], function() {
     inputBox.focus()
 })
 
-// Обработчик событий клавиш для пролистывания экрана панелей вывода: <Up/Down> или Ctrl+<Up/Down>
-// inputBox.key(['C-up', 'C-down'], function(ch, key) {
-inputBox.key(['up', 'down'], function(ch, key) {
+// Обработчик событий клавиш для пролистывания экрана панелей вывода: Ctrl+<Up/Down>
+inputBox.key(['C-up', 'C-down'], function(ch, key) {
     // Скроллим вверх
-    if (key.name === 'up') {
+    if (key.name === 'up' && key.ctrl == true) {
         outputBox1.scroll(-1)
         outputBox2.scroll(-1)
         outputBox3.scroll(-1)
         outputBox4.scroll(-1)
     }
     // Скроллим вниз
-    else if (key.name === 'down') {
+    else if (key.name === 'down' && key.ctrl == true) {
         outputBox1.scroll(1)
         outputBox2.scroll(1)
         outputBox3.scroll(1)
