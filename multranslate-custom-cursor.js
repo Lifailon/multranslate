@@ -184,6 +184,8 @@ screen.append(textInfo)
 
 // ------------------------------------- TextBuffer -------------------------------------
 
+// 12345678 - автоматический перенос слова, если в конце строки 8 (без учета пробела) и меньше символов после пробела
+
 // Класс для управления текстовым буфером и курсором
 class TextBuffer {
     // Инициализация свойств объекта
@@ -277,7 +279,7 @@ class TextBuffer {
         }
         // Debug output
         // outputBox1.setContent(`${maxLines} ${maxChars} | ${viewLines} ${currentLine}`)
-        // outputBox2.setContent(box.getScroll())
+        // outputBox2.setContent(`${box.getScroll()}`)
         // outputBox3.setContent(box.getScrollHeight())
         // outputBox4.setContent(box.getScrollPerc())
     }
@@ -350,14 +352,78 @@ class TextBuffer {
         }
     }
     // Метод навигации вверх или вниз
-    navigateUpDown(type) {
+    navigateUpDown(box,type) {
+        const maxChars = box.width - 4
         // Массив из строк
         const bufferLines = this.text.split('\r')
         // Массив из длинны всех строк
         let linesArray = []
+        // Зафиксировать длинну только реальных строк
         for (let line of bufferLines) {
             linesArray.push(line.length)
         }
+        // Фиксируем длинну всех строк
+        // for (let line of bufferLines) {
+        //     // Добавляем виртуальные строки
+        //     if (line.length > maxChars) {
+        //         // ВАРИАНТ 3
+        //         // Стартовая позиция для среза
+        //         let startCount = 0
+        //         // Конец строки для среза из максимальной длинны
+        //         let endCount = maxChars
+        //         // Узнаем длинну строк с учетом автопереноса
+        //         while (true) {
+        //             // Срез текущей строки
+        //             let count = line.slice(startCount, endCount)
+        //             // Если достигли конца всех строк (длинна всей строки минус начальная позиция текущего среза меньше длинны строки с учетом переноса), добавляем остаток и завершаем цикл
+        //             if ((line.length - startCount) < maxChars) {
+        //                 linesArray.push(line.length - startCount)
+        //                 outputBox3.setContent(`(${line.length} - ${startCount} - 9 (${line.length - maxChars - 9})) < ${maxChars-9}`)
+        //                 break
+        //             }
+        //             // Если достигли конца строки для автопереноса, добавляем длинну строки целиком, обновляем начальную позицию и конец строки среза для проверки следующей строки 
+        //             else if (endCount === maxChars-9) {
+        //                 linesArray.push(maxChars - 1) // -1 из за смещения пробелом курсора
+        //                 startCount = startCount + maxChars
+        //                 endCount = endCount + maxChars
+        //             }
+        //             // Если последний символ в строке не является пробелом, увеличиваем счетчик конца среза текущей строки
+        //             else if (count[count.length-1] !== ' ') {
+        //                 endCount--
+        //             }
+        //             // Если последний символ в строке содержит пробел, то добавляем строку текущей длинны среза
+        //             else {
+        //                 linesArray.push(count.length - 1) // -1 из за смещения пробелом курсора
+        //                 startCount = startCount + count.length
+        //                 endCount = endCount + maxChars
+        //             }
+        //         }
+        //         // // ВАРИАНТ 2
+        //         // // Фиксируем количество виртуальных строк + последняя строка
+        //         // let viewCurrentLines = Math.floor(line.length / (maxChars)) + 1
+        //         // // Массив из длинны строк
+        //         // let viewCurrentLinesArray = [...Array(viewCurrentLines).keys()]
+        //         // let count = line.length
+        //         // // Собираем длинну строк
+        //         // count = line.length
+        //         // for (let l of viewCurrentLinesArray) {
+        //         //     if (count > maxChars) {
+        //         //         linesArray.push(maxChars-1)
+        //         //         count -= maxChars
+        //         //     }
+        //         //     else {
+        //         //         linesArray.push(count)
+        //         //     }
+        //         // }
+        //     }
+        //     else {
+        //         linesArray.push(line.length)
+        //     }
+        // }
+        // outputBox1.setContent(`${linesArray[0]}`)
+        // outputBox2.setContent(`${linesArray[1]}`)
+        // outputBox3.setContent(`${linesArray[2]}`)
+        // outputBox4.setContent(`${linesArray[3]}`)
         // Счетчик начинается с длинны первой строки
         let charsArray = linesArray[0]
         let cursorLine = 1
@@ -394,7 +460,7 @@ class TextBuffer {
             }
         }
         else if (type === 'down') {
-            if (cursorLine < bufferLines.length) {
+            if (cursorLine < linesArray.length) {
                 // Если первая строка, обновляем значение текущей позиции в строке
                 if (cursorLine === 1) {
                     charToLine = this.cursorPosition
@@ -481,10 +547,10 @@ inputBox.on('keypress', function (ch, key) {
     }
     // Навигация курсора между строками
     else if (key.name === 'up') {
-        buffer.navigateUpDown('up')
+        buffer.navigateUpDown(inputBox,'up')
     }
     else if (key.name === 'down') {
-        buffer.navigateUpDown('down')
+        buffer.navigateUpDown(inputBox,'down')
     }
     // Удалить словосочетание перед курсором
     else if (key.name === 'delete' && key.ctrl === true) {
@@ -744,7 +810,7 @@ async function handleTranslation() {
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить для отладки интерфейса)
-    // await handleTranslation()
+    await handleTranslation()
 })
 
 // Обработка вставка текста из буфера обмена в поле ввода
