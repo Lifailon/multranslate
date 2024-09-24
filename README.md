@@ -12,20 +12,20 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-Terminal user interface based on [blessed library](https://github.com/chjj/blessed) for translating text using multiple translation providers simultaneously. All sources do not require an access token or any settings. Supports **automatic detection of the source and destination language** between English and Russian.
+Terminal user interface based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using multiple translation sources. All sources do not require an access token or any settings. Supports **automatic detection of source and target languages** between English and Russian at the code level.
 
 ![Example](/example.jpg)
 
-## Translation providers
+## 📚 Translation providers
 
 - Google via free and unlimited [API](https://github.com/matheuss/google-translate-api) using [serverless](https://github.com/olavoparno/translate-serverless-vercel) hosted on Vercel.
 - [DeepLX](https://github.com/OwO-Network/DeepLX) - free [DeepL](https://deepl.com) API using [serverless](https://github.com/LegendLeo/deeplx-serverless) hosted on [Vercel](https://github.com/bropines/Deeplx-vercel).
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open api (usage is limited to 5000 chars/day).
 - [Reverso](https://www.reverso.net) - free api (does not contain official documentation, request was received from official site through DevTools).
 
-> **Reverso** does not support working via **Axios** (error: `Invalid header value char`), **Fetch** is used instead.
+> ⚠ **Reverso** does not support working via **Axios** (error: `Invalid header value char`), **Fetch** is used instead.
 
-## Installation
+## 🚀 Installation
 
 Use the [npm](https://www.npmjs.com/package/multranslate) package manager:
 
@@ -39,7 +39,7 @@ Run the application:
 multranslate
 ```
 
-## Build
+## 🔧 Build
 
 Clone the repository:
 
@@ -54,12 +54,36 @@ Run the application:
 npm start
 ```
 
-## Hotkeys
+To debug the interface:
 
-The text is translated every time after pressing the `Enter` button. The `Ctrl+C` keyboard shortcut is used to clear the text input field. The `escape` button is used to exit the program.
+```shell
+npm run dev
+```
 
-To copy text to the clipboard from the selected output form, you can use the key combination `Ctrl+<Q/W/E/R>` (for each translator it is indicated in brackets), and the selected form will change its color to green. To paste text into an input field from the clipboard, use `Ctrl+V`.
+## 💡 Text buffer
 
-Using the `up` and `down` buttons you can scroll through all output panels at the same time.
+The Blessed library is deprecated (no longer supported) and has a number of technical limitations, such as cursor navigation in a text input field. For this reason, a mechanism for managing input text via text buffer has been implemented, which allows using a custom cursor for navigation using keyboard arrows and automatic scrolling for swiping.
 
-> The blessed library has a number of limitations, so I was unable to implement cursor movement using the left and right arrows.
+If you plan to use this library for similar tasks where text input is required, then add `class TextBuffer` and control of `keypress` shortcuts to your code via `inputBox.on()`.
+
+## ⌨ Hotkeys
+
+- `Enter` - is used each time to translate the text simultaneously with moving to a new line.
+
+- `Shift+<⬆/⬇>` - simultaneous scrolling of all output panels.
+
+- `Ctrl+<Q/W/E/R>` - copying translation results from output forms to the clipboard (for each translator, the key combination is indicated in brackets), and the selected form will change its color to green.
+
+- `Ctrl+V` - paste text from the clipboard (defined at the code level).
+
+- `Ctrl+C` - clear the text input field.
+
+- `Ctrl+<⬆/⬇>` - scrolling the text input panel without navigation.
+
+- `Ctrl+<⬅/➡>` - quick cursor navigation through phrases.
+
+- `Ctrl+DEL` - delete the phrase before the cursor.
+
+- `Ctrl+<A/D>` - move the cursor to the beginning or end of text input.
+
+- `Escape` - exit the program.
