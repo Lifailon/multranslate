@@ -29,7 +29,9 @@
   "dependencies": {
     "axios": "^1.7.5",
     "blessed": "^0.1.81",
-    "clipboardy": "^4.0.0"
+    "clipboardy": "^4.0.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "bin": {
     "multranslate": "multranslate-custom-cursor.js"

@@ -3,6 +3,8 @@
 import blessed from 'blessed'
 import axios from 'axios'
 import clipboardy from 'clipboardy'
+import * as sqlite from 'sqlite'
+import sqlite3 from 'sqlite3'
 
 var screen = blessed.screen({
     autoPadding: true,
@@ -647,36 +649,6 @@ inputBox.on('keypress', function (ch, key) {
     screen.render()
 })
 
-// --------------------------------------------------------------------------------------
-
-// Функция определения исходного языка
-function detectFromLanguage(text) {
-    const russianPattern = /[а-яА-Я]/g
-    const englishPattern = /[a-zA-Z]/g
-    const russianMatches = text.match(russianPattern) || []
-    const englishMatches = text.match(englishPattern) || []
-    const russianCount = russianMatches.length
-    const englishCount = englishMatches.length
-    if (russianCount >= englishCount) {
-        return 'ru'
-    } else if (russianCount <= englishCount) {
-        return 'en'
-    } else {
-        return ''
-    }
-}
-
-// Функция определения целевого языка
-function detectToLanguage(lang) {
-    if (lang === 'ru') {
-        return 'en'
-    } else if (lang === 'en') {
-        return 'ru'
-    } else {
-        return ''
-    }
-}
-
 // ----------------------------------- API functions ------------------------------------
 
 // Функция перевода через Google API
@@ -819,7 +791,9 @@ async function translateReversoFetch(text) {
 async function handleTranslation() {
     // Заменяем символ возврата каретки на перенос строки без экранирования
     const textToTranslate = buffer.getText().trim().replace(/\r/g, '\n')
-    if (textToTranslate) {
+    if (textToTranslate.length > 1) {
+        // Записываем содержимое запросов перевода в базу данных
+        writeHistory(textToTranslate)
         const [
             translatedText1,
             translatedText2,
@@ -836,18 +810,110 @@ async function handleTranslation() {
         outputBox3.setContent(translatedText3)
         outputBox4.setContent(translatedText4)
         screen.render()
-        // Вернуть фокус на inputBox
         inputBox.focus()
     }
 }
-
-// --------------------------------------------------------------------------------------
 
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async () => {
     // Debug (отключить перевод для отладки интерфейса)
     await handleTranslation()
 })
+
+// -------------------------------------- SQLite ----------------------------------------
+
+async function writeHistory(data) {
+    const db = await sqlite.open({
+        filename: './translation-history.db',
+        driver: sqlite3.Database
+    })
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS translationTable (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            inputText TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+    await db.run('INSERT INTO translationTable (inputText) VALUES (?)', [data])
+    await db.close()
+}
+
+async function readHistory(id) {
+    const db = await sqlite.open({
+        filename: './translation-history.db',
+        driver: sqlite3.Database
+    })
+    const query = 'SELECT inputText FROM translationTable WHERE id = ?'
+    const data = await db.get(query, [id])
+    await db.close()
+    return data
+}
+
+async function getAllId() {
+    const db = await sqlite.open({
+        filename: './translation-history.db',
+        driver: sqlite3.Database
+    })
+    const data = await db.all('SELECT * FROM translationTable')
+    await db.close()
+    return data.map(row => row.id)
+}
+
+// else if (key.name === 'z' && key.ctrl === true) {
+//     (async () => {
+//         const allId = await getAllId()
+//         const lastId = allId[allId.length-1]
+//         const lastText = await readHistory(lastId)
+//         const newText = lastText.inputText.replace(/\n/g, '\r')
+//         // console.log(newText)
+//         buffer.setText(newText)
+//         buffer.setCursorPosition(newText.length)
+//     })()
+// }
+
+async function getHistory() {
+    const allId = await getAllId()
+    const lastId = allId[allId.length-1]
+    const lastText = await readHistory(lastId)
+    const newText = lastText.inputText.replace(/\n/g, '\r')
+    buffer.setText(newText)
+    buffer.setCursorPosition(newText.length)
+}
+
+// Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
+inputBox.key(['C-z'], async () => {
+    await getHistory()
+})
+
+// --------------------------------------------------------------------------------------
+
+// Функция определения исходного языка
+function detectFromLanguage(text) {
+    const russianPattern = /[а-яА-Я]/g
+    const englishPattern = /[a-zA-Z]/g
+    const russianMatches = text.match(russianPattern) || []
+    const englishMatches = text.match(englishPattern) || []
+    const russianCount = russianMatches.length
+    const englishCount = englishMatches.length
+    if (russianCount >= englishCount) {
+        return 'ru'
+    } else if (russianCount <= englishCount) {
+        return 'en'
+    } else {
+        return ''
+    }
+}
+
+// Функция определения целевого языка
+function detectToLanguage(lang) {
+    if (lang === 'ru') {
+        return 'en'
+    } else if (lang === 'en') {
+        return 'ru'
+    } else {
+        return ''
+    }
+}
 
 // Обработка копирования вывода в буфер обмена и подцветка выбранного поля вывода
 inputBox.key(['C-q'], function() {
@@ -894,13 +960,9 @@ inputBox.key(['C-r'], function() {
     inputBox.focus()
 })
 
-// Обработка выхода
 inputBox.key(['escape'], function () {
     return process.exit(0)
 })
 
-// Отображение интерфейса
 screen.render()
-
-// Установить фокус на поле ввода
 inputBox.focus()
