@@ -237,13 +237,25 @@ function readHistory(id) {
     db.close()
     return data
 }
-
 function getAllId() {
     const db = new Database('./translation-history.db')
-    const data = db.prepare('SELECT * FROM translationTable').all()
+    let result
+    // Проверяем, что таблица существует
+    const tableExists = db.prepare(`
+        SELECT name FROM sqlite_master WHERE type='table' AND name='translationTable'
+    `).get()
+    if (tableExists) {
+        const data = db.prepare('SELECT * FROM translationTable').all()
+        result = data.map(row => row.id)
+    }
+    else {
+        db.close()
+        result = []
+    }
     db.close()
-    return data.map(row => row.id)
+    return result
 }
+
 
 // import * as sqlite from 'sqlite'
 // import sqlite3 from 'sqlite3'
@@ -739,13 +751,15 @@ inputBox.on('keypress', function (ch, key) {
     // Чтение из истории с конца
     else if (key.name === 'z' && key.ctrl === true) {
         const allId = getAllId()
-        const lastId = allId[allId.length-1]
-        const lastText = readHistory(lastId)
-        const newText = lastText.inputText.replace(/\n/g, '\r')
-        // console.log(newText)
-        buffer.setText(newText)
-        buffer.setCursorPosition(newText.length)
-        screen.render()
+        if (allId.length !== 0) {
+            const lastId = allId[allId.length-1]
+            const lastText = readHistory(lastId)
+            const newText = lastText.inputText.replace(/\n/g, '\r')
+            // console.log(newText)
+            buffer.setText(newText)
+            buffer.setCursorPosition(newText.length)
+            screen.render()
+        }
     }    
     // Если нажата любая другая клавиша и она не пустая, добавляем символ в текст
     else if (ch) {
