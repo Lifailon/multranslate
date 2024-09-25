@@ -8,6 +8,7 @@ import Database from 'better-sqlite3'
 var screen = blessed.screen({
     autoPadding: true,
     smartCSR: true,
+    title: 'multranslate',
     // Добавить кастомный курсор Blessed
     cursor: {
         artificial: true,
@@ -24,11 +25,10 @@ var screen = blessed.screen({
 // Панель для ввода текста
 const inputBox = blessed.textarea({
     top: '0%',
-    left: 'left',
     width: '100%',
     height: '20%',
-    inputOnFocus: false, // Отключаем ввод текста для управления через TextBuffer
-    wrap: true, // Откоючить автоматический перенос слов для управления через метод autoWrap()
+    inputOnFocus: false, // отключить ввод текста для управления через TextBuffer
+    wrap: true, // false для отключения автоматического переноса слов (от 0 до 10 в конце строки после пробела)
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -53,8 +53,7 @@ const inputBox = blessed.textarea({
 const outputBox1 = blessed.textarea({
     label: `Google (Ctrl+Q)`,
     top: '20%',
-    left: 'left',
-    width: '50%',
+    width: '49.5%',
     height: '40%',
     scrollable: true,
     alwaysScroll: true,
@@ -80,8 +79,7 @@ const outputBox1 = blessed.textarea({
 const outputBox2 = blessed.textarea({
     label: `DeepL (Ctrl+W)`,
     top: '20%',
-    right: 'right',
-    left: '51%',
+    left: '50.5%',
     width: '50%',
     height: '40%',
     scrollable: true,
@@ -108,8 +106,7 @@ const outputBox2 = blessed.textarea({
 const outputBox3 = blessed.textarea({
     label: `MyMemory (Ctrl+E)`,
     top: '60%',
-    left: 'left',
-    width: '50%',
+    width: '49.5%',
     height: '40%',
     scrollable: true,
     alwaysScroll: true,
@@ -135,8 +132,7 @@ const outputBox3 = blessed.textarea({
 const outputBox4 = blessed.textarea({
     label: `Reverso (Ctrl+R)`,
     top: '60%',
-    right: 'right',
-    left: '51%',
+    left: '50.5%',
     width: '50%',
     height: '40%',
     scrollable: true,
@@ -159,21 +155,21 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Shift+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
-// Enter: translate, <⬅/➡/⬆/⬇>: input navigation, Ctrl+<⬆/⬇> - scroll input, Ctrl+<⬅/➡>: fast navigation, Ctrl+Del: delete word before cursor
+// const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Shift+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
+// // Enter: translate, <⬅/➡/⬆/⬇>: input navigation, Ctrl+<⬆/⬇> - scroll input, Ctrl+<⬅/➡>: fast navigation, Ctrl+Del: delete word before cursor
 
-// Информация по навигации внизу формы
-const textInfo = blessed.text({
-    content: infoText, 
-    bottom: 0,
-    left: 0,
-    right: 0,
-    align: 'center',
-    style: {
-        fg: 'blue',
-        bg: 'black'
-    }
-})
+// // Информация по навигации внизу формы
+// const textInfo = blessed.text({
+//     content: infoText, 
+//     bottom: 0,
+//     left: 0,
+//     right: 0,
+//     align: 'center',
+//     style: {
+//         fg: 'blue',
+//         bg: 'black'
+//     }
+// })
 
 // Добавление панелей на экран
 screen.append(inputBox)
@@ -181,9 +177,9 @@ screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
-screen.append(textInfo)
+// screen.append(textInfo)
 
-// --------------------------------- Language definer -----------------------------------
+// ------------------------------- Auto-detect Language ---------------------------------
 
 // Функция определения исходного языка
 function detectFromLanguage(text) {
@@ -214,6 +210,9 @@ function detectToLanguage(lang) {
 }
 
 // -------------------------------------- SQLite ----------------------------------------
+
+let maxID = 0
+let curID = 0
 
 function writeHistory(data) {
     const db = new Database('./translation-history.db')
@@ -255,60 +254,6 @@ function getAllId() {
     db.close()
     return result
 }
-
-
-// import * as sqlite from 'sqlite'
-// import sqlite3 from 'sqlite3'
-
-// async function writeHistory(data) {
-//     const db = await sqlite.open({
-//         filename: './translation-history.db',
-//         driver: sqlite3.Database
-//     })
-//     await db.exec(`
-//         CREATE TABLE IF NOT EXISTS translationTable (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             inputText TEXT NOT NULL,
-//             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-//         )
-//     `)
-//     await db.run('INSERT INTO translationTable (inputText) VALUES (?)', [data])
-//     await db.close()
-// }
-
-// async function readHistory(id) {
-//     const db = await sqlite.open({
-//         filename: './translation-history.db',
-//         driver: sqlite3.Database
-//     })
-//     const query = 'SELECT inputText FROM translationTable WHERE id = ?'
-//     const data = await db.get(query, [id])
-//     await db.close()
-//     return data
-// }
-
-// async function getAllId() {
-//     const db = await sqlite.open({
-//         filename: './translation-history.db',
-//         driver: sqlite3.Database
-//     })
-//     const data = await db.all('SELECT * FROM translationTable')
-//     await db.close()
-//     return data.map(row => row.id)
-// }
-
-// async function getHistory() {
-//     const allId = await getAllId()
-//     const lastId = allId[allId.length-1]
-//     const lastText = await readHistory(lastId)
-//     const newText = lastText.inputText.replace(/\n/g, '\r')
-//     buffer.setText(newText)
-//     buffer.setCursorPosition(newText.length)
-// }
-
-// inputBox.key(['C-z'], async () => {
-//     await getHistory()
-// })
 
 // ------------------------------------- TextBuffer -------------------------------------
 
@@ -752,29 +697,56 @@ inputBox.on('keypress', function (ch, key) {
     else if (key.name === 'z' && key.ctrl === true) {
         const allId = getAllId()
         if (allId.length !== 0) {
-            const lastId = allId[allId.length-1]
-            const lastText = readHistory(lastId)
-            const newText = lastText.inputText.replace(/\n/g, '\r')
-            // console.log(newText)
-            buffer.setText(newText)
-            buffer.setCursorPosition(newText.length)
-            screen.render()
+            let lastId
+            if (maxID === 0) {
+                lastId = allId[allId.length-1]
+                curID = allId.length-1
+                maxID = allId.length-1
+            }
+            else {
+                if (curID !== 0) {
+                    curID--
+                }
+                lastId = allId[curID]
+            }
+            if (lastId) {
+                const lastText = readHistory(lastId)
+                const newText = lastText.inputText.replace(/\n/g, '\r')
+                buffer.setText(newText)
+                buffer.setCursorPosition(newText.length)
+            }
         }
-    }    
+    }
+    // Чтение из истории в обратном порядке
+    else if (key.name === 'x' && key.ctrl === true) {
+        const allId = getAllId()
+        if (allId.length !== 0) {
+            let nextId
+            if (maxID === 0) {
+                nextId = allId[allId.length-1]
+                curID = allId.length-1
+                maxID = allId.length-1
+            }
+            else {
+                if (curID !== allId.length-1) {
+                    curID++
+                }
+                nextId = allId[curID]
+            }
+            if (nextId) {
+                const lastText = readHistory(nextId)
+                const newText = lastText.inputText.replace(/\n/g, '\r')
+                buffer.setText(newText)
+                buffer.setCursorPosition(newText.length)
+            }
+        }
+    }
     // Если нажата любая другая клавиша и она не пустая, добавляем символ в текст
     else if (ch) {
         // Обновляем текст, добавляя символом следом за текущей позицией курсора
         const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + ch + buffer.getText().slice(buffer.getCursorPosition())
         // Устанавливаем новый текст в буфер
         buffer.setText(newText)
-        // // Используем метод автоматического переноса строки для записи нового текста
-        // const beforeText = buffer.getText().split('\r').length
-        // buffer.autoWrap(newText,inputBox)
-        // const afterText = buffer.getText().split('\r').length
-        // // Добавить сдвиг курсора, если это перенос вызван добавлением новой строки за исключением Enter
-        // if (afterText > beforeText && key.name !== 'return') {
-        //     buffer.setCursorPosition(buffer.getCursorPosition()+1)
-        // }
         // Перемещаем курсор вправо после добавления символа
         buffer.moveRight()
     }
@@ -933,6 +905,8 @@ async function handleTranslation() {
     if (textToTranslate.length > 1) {
         // Записываем содержимое запросов перевода в базу данных
         writeHistory(textToTranslate)
+        // Сбрасываем значение счетчика навигации по истории
+        maxID = 0
         const [
             translatedText1,
             translatedText2,
@@ -959,7 +933,7 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// --------------------------------------------------------------------------------------
+// ---------------------------------- Clipboard output ----------------------------------
 
 // Обработка копирования вывода в буфер обмена и подцветка выбранного поля вывода
 inputBox.key(['C-q'], function() {
@@ -1005,6 +979,8 @@ inputBox.key(['C-r'], function() {
     screen.render()
     inputBox.focus()
 })
+
+// --------------------------------------------------------------------------------------
 
 inputBox.key(['escape'], function () {
     return process.exit(0)
