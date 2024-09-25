@@ -155,21 +155,52 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-// const infoText = 'Ctrl+C: clear input, Ctrl+<A/D>: go to start or end, Shift+<⬆/⬇>: scroll output, Ctrl+<Q/W/E/R>: copy to clipboard, Escape: exit'
-// // Enter: translate, <⬅/➡/⬆/⬇>: input navigation, Ctrl+<⬆/⬇> - scroll input, Ctrl+<⬅/➡>: fast navigation, Ctrl+Del: delete word before cursor
+// Информация по горячим клавишам
+const helpBox = blessed.box({
+    hidden: true, // Скрыть форму
+    tags: true, // включить поддержку тегов для разметки
+    top: 'center',
+    left: 'center',
+    width: '70%',
+    height: '50%',
+    border: {
+        type: 'line',
+    },
+    style: {
+        fg: 'white',
+        bg: 'gray',
+        border: {
+            fg: 'green',
+        },
+    }
+})
 
-// // Информация по навигации внизу формы
-// const textInfo = blessed.text({
-//     content: infoText, 
-//     bottom: 0,
-//     left: 0,
-//     right: 0,
-//     align: 'center',
-//     style: {
-//         fg: 'blue',
-//         bg: 'black'
-//     }
-// })
+helpBox.setContent(`
+    {yellow-fg}Hotkeys{/yellow-fg}:
+
+    {green-fg}Enter{/green-fg}: Translation
+    {cyan-fg}Ctrl+V{/cyan-fg}: Pasting text from the clipboard
+    {cyan-fg}Ctrl+<Q/W/E/R>{/cyan-fg}: Copy translation results to clipboard
+    {cyan-fg}Ctrl+Z{/cyan-fg}: Navigation of the translations history from the end
+    {cyan-fg}Ctrl+X{/cyan-fg}: Navigation of the translations history in reverse order
+    {blue-fg}Shift+<⬆/⬇>{/blue-fg}: Scrolling of all output panels
+    {blue-fg}Ctrl+C{/blue-fg}: Clear text input field
+    {blue-fg}Ctrl+<⬆/⬇>{/blue-fg}: Scrolling the text input panel without navigation
+    {blue-fg}Ctrl+<⬅/➡\\>{/blue-fg}: Fast cursor navigation through words
+    {blue-fg}Ctrl+Del{/blue-fg}: Remove word before cursor
+    {blue-fg}Ctrl+<A/D>{/blue-fg}: Move the cursor to the beginning or end of the input
+    {red-fg}Escape{/red-fg}: Exit the program
+
+    (c) 2024, GitHub Source: https://github.com/Lifailon/multranslate
+`)
+
+screen.key(['C-s'], function() {
+    if (helpBox.hidden === true){
+        helpBox.show()
+    } else {
+        helpBox.hide()
+    }
+})
 
 // Добавление панелей на экран
 screen.append(inputBox)
@@ -177,6 +208,8 @@ screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
+screen.append(helpBox)
+
 // screen.append(textInfo)
 
 // ------------------------------- Auto-detect Language ---------------------------------
@@ -678,7 +711,12 @@ inputBox.on('keypress', function (ch, key) {
         const newText = buffer.getText()
         buffer.setText(newText)
     }
-    // Обработка очистки бефра
+    // Копирование текста из поля ввода в буфер обмена
+    // else if (key.name === 'c' && key.shift === true) {
+    //     const textToCopy = buffer.getText()
+    //     clipboardy.writeSync(textToCopy)
+    // }
+    // Обработка очистки буфера
     else if (key.name === 'c' && key.ctrl === true) {
         buffer.setText("")
     }
