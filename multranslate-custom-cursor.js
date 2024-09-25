@@ -3,8 +3,7 @@
 import blessed from 'blessed'
 import axios from 'axios'
 import clipboardy from 'clipboardy'
-import * as sqlite from 'sqlite'
-import sqlite3 from 'sqlite3'
+import Database from 'better-sqlite3'
 
 var screen = blessed.screen({
     autoPadding: true,
@@ -183,6 +182,121 @@ screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
 screen.append(textInfo)
+
+// --------------------------------- Language definer -----------------------------------
+
+// Функция определения исходного языка
+function detectFromLanguage(text) {
+    const russianPattern = /[а-яА-Я]/g
+    const englishPattern = /[a-zA-Z]/g
+    const russianMatches = text.match(russianPattern) || []
+    const englishMatches = text.match(englishPattern) || []
+    const russianCount = russianMatches.length
+    const englishCount = englishMatches.length
+    if (russianCount >= englishCount) {
+        return 'ru'
+    } else if (russianCount <= englishCount) {
+        return 'en'
+    } else {
+        return ''
+    }
+}
+
+// Функция определения целевого языка
+function detectToLanguage(lang) {
+    if (lang === 'ru') {
+        return 'en'
+    } else if (lang === 'en') {
+        return 'ru'
+    } else {
+        return ''
+    }
+}
+
+// -------------------------------------- SQLite ----------------------------------------
+
+function writeHistory(data) {
+    const db = new Database('./translation-history.db')
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS translationTable (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            inputText TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+    const insert = db.prepare('INSERT INTO translationTable (inputText) VALUES (?)')
+    insert.run(data)
+    db.close()
+}
+
+function readHistory(id) {
+    const db = new Database('./translation-history.db')
+    const query = 'SELECT inputText FROM translationTable WHERE id = ?'
+    const get = db.prepare(query)
+    const data = get.get(id)
+    db.close()
+    return data
+}
+
+function getAllId() {
+    const db = new Database('./translation-history.db')
+    const data = db.prepare('SELECT * FROM translationTable').all()
+    db.close()
+    return data.map(row => row.id)
+}
+
+// import * as sqlite from 'sqlite'
+// import sqlite3 from 'sqlite3'
+
+// async function writeHistory(data) {
+//     const db = await sqlite.open({
+//         filename: './translation-history.db',
+//         driver: sqlite3.Database
+//     })
+//     await db.exec(`
+//         CREATE TABLE IF NOT EXISTS translationTable (
+//             id INTEGER PRIMARY KEY AUTOINCREMENT,
+//             inputText TEXT NOT NULL,
+//             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+//         )
+//     `)
+//     await db.run('INSERT INTO translationTable (inputText) VALUES (?)', [data])
+//     await db.close()
+// }
+
+// async function readHistory(id) {
+//     const db = await sqlite.open({
+//         filename: './translation-history.db',
+//         driver: sqlite3.Database
+//     })
+//     const query = 'SELECT inputText FROM translationTable WHERE id = ?'
+//     const data = await db.get(query, [id])
+//     await db.close()
+//     return data
+// }
+
+// async function getAllId() {
+//     const db = await sqlite.open({
+//         filename: './translation-history.db',
+//         driver: sqlite3.Database
+//     })
+//     const data = await db.all('SELECT * FROM translationTable')
+//     await db.close()
+//     return data.map(row => row.id)
+// }
+
+// async function getHistory() {
+//     const allId = await getAllId()
+//     const lastId = allId[allId.length-1]
+//     const lastText = await readHistory(lastId)
+//     const newText = lastText.inputText.replace(/\n/g, '\r')
+//     buffer.setText(newText)
+//     buffer.setCursorPosition(newText.length)
+// }
+
+// inputBox.key(['C-z'], async () => {
+//     await getHistory()
+// })
 
 // ------------------------------------- TextBuffer -------------------------------------
 
@@ -622,6 +736,17 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор в конец текста
         buffer.setCursorPosition(buffer.getCursorPosition() + clipboardText.length)
     }
+    // Чтение из истории с конца
+    else if (key.name === 'z' && key.ctrl === true) {
+        const allId = getAllId()
+        const lastId = allId[allId.length-1]
+        const lastText = readHistory(lastId)
+        const newText = lastText.inputText.replace(/\n/g, '\r')
+        // console.log(newText)
+        buffer.setText(newText)
+        buffer.setCursorPosition(newText.length)
+        screen.render()
+    }    
     // Если нажата любая другая клавиша и она не пустая, добавляем символ в текст
     else if (ch) {
         // Обновляем текст, добавляя символом следом за текущей позицией курсора
@@ -820,100 +945,7 @@ inputBox.key(['enter'], async () => {
     await handleTranslation()
 })
 
-// -------------------------------------- SQLite ----------------------------------------
-
-async function writeHistory(data) {
-    const db = await sqlite.open({
-        filename: './translation-history.db',
-        driver: sqlite3.Database
-    })
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS translationTable (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            inputText TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `)
-    await db.run('INSERT INTO translationTable (inputText) VALUES (?)', [data])
-    await db.close()
-}
-
-async function readHistory(id) {
-    const db = await sqlite.open({
-        filename: './translation-history.db',
-        driver: sqlite3.Database
-    })
-    const query = 'SELECT inputText FROM translationTable WHERE id = ?'
-    const data = await db.get(query, [id])
-    await db.close()
-    return data
-}
-
-async function getAllId() {
-    const db = await sqlite.open({
-        filename: './translation-history.db',
-        driver: sqlite3.Database
-    })
-    const data = await db.all('SELECT * FROM translationTable')
-    await db.close()
-    return data.map(row => row.id)
-}
-
-// else if (key.name === 'z' && key.ctrl === true) {
-//     (async () => {
-//         const allId = await getAllId()
-//         const lastId = allId[allId.length-1]
-//         const lastText = await readHistory(lastId)
-//         const newText = lastText.inputText.replace(/\n/g, '\r')
-//         // console.log(newText)
-//         buffer.setText(newText)
-//         buffer.setCursorPosition(newText.length)
-//     })()
-// }
-
-async function getHistory() {
-    const allId = await getAllId()
-    const lastId = allId[allId.length-1]
-    const lastText = await readHistory(lastId)
-    const newText = lastText.inputText.replace(/\n/g, '\r')
-    buffer.setText(newText)
-    buffer.setCursorPosition(newText.length)
-}
-
-// Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
-inputBox.key(['C-z'], async () => {
-    await getHistory()
-})
-
 // --------------------------------------------------------------------------------------
-
-// Функция определения исходного языка
-function detectFromLanguage(text) {
-    const russianPattern = /[а-яА-Я]/g
-    const englishPattern = /[a-zA-Z]/g
-    const russianMatches = text.match(russianPattern) || []
-    const englishMatches = text.match(englishPattern) || []
-    const russianCount = russianMatches.length
-    const englishCount = englishMatches.length
-    if (russianCount >= englishCount) {
-        return 'ru'
-    } else if (russianCount <= englishCount) {
-        return 'en'
-    } else {
-        return ''
-    }
-}
-
-// Функция определения целевого языка
-function detectToLanguage(lang) {
-    if (lang === 'ru') {
-        return 'en'
-    } else if (lang === 'en') {
-        return 'ru'
-    } else {
-        return ''
-    }
-}
 
 // Обработка копирования вывода в буфер обмена и подцветка выбранного поля вывода
 inputBox.key(['C-q'], function() {
