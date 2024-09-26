@@ -107,7 +107,7 @@ const outputBox3 = blessed.textarea({
     label: `MyMemory (Ctrl+E)`,
     top: '60%',
     width: '49.5%',
-    height: '40%',
+    height: '39%',
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -134,7 +134,7 @@ const outputBox4 = blessed.textarea({
     top: '60%',
     left: '50.5%',
     width: '50%',
-    height: '40%',
+    height: '39%',
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -155,8 +155,23 @@ const outputBox4 = blessed.textarea({
     }
 })
 
+let infoContent = ` Ctrl+S: Get help on Hotkeys.`
+
+// Информация по навигации внизу формы
+const infoBox = blessed.text({
+    content: infoContent, 
+    bottom: 0,
+    left: 0,
+    right: 0,
+    align: 'center',
+    style: {
+        fg: 'blue',
+        bg: 'black'
+    }
+})
+
 // Информация по горячим клавишам
-const helpBox = blessed.box({
+const hotkeysBox = blessed.box({
     hidden: true, // Скрыть форму
     tags: true, // включить поддержку тегов для разметки
     top: 'center',
@@ -175,7 +190,7 @@ const helpBox = blessed.box({
     }
 })
 
-helpBox.setContent(`
+hotkeysBox.setContent(`
     {yellow-fg}Hotkeys{/yellow-fg}:
 
     {green-fg}Enter{/green-fg}: Translation
@@ -184,21 +199,21 @@ helpBox.setContent(`
     {cyan-fg}Ctrl+Z{/cyan-fg}: Navigation of the translations history from the end
     {cyan-fg}Ctrl+X{/cyan-fg}: Navigation of the translations history in reverse order
     {blue-fg}Shift+<⬆/⬇>{/blue-fg}: Scrolling of all output panels
-    {blue-fg}Ctrl+C{/blue-fg}: Clear text input field
     {blue-fg}Ctrl+<⬆/⬇>{/blue-fg}: Scrolling the text input panel without navigation
-    {blue-fg}Ctrl+<⬅/➡\\>{/blue-fg}: Fast cursor navigation through words
-    {blue-fg}Ctrl+Del{/blue-fg}: Remove word before cursor
+    {blue-fg}Ctrl+<⬅/➡>{/blue-fg}: Fast cursor navigation through words
     {blue-fg}Ctrl+<A/D>{/blue-fg}: Move the cursor to the beginning or end of the input
+    {blue-fg}Ctrl+Del{/blue-fg}: Remove word before cursor
+    {blue-fg}Ctrl+C{/blue-fg}: Clear text input field
     {red-fg}Escape{/red-fg}: Exit the program
 
     (c) 2024, GitHub Source: https://github.com/Lifailon/multranslate
 `)
 
 screen.key(['C-s'], function() {
-    if (helpBox.hidden === true){
-        helpBox.show()
+    if (hotkeysBox.hidden === true){
+        hotkeysBox.show()
     } else {
-        helpBox.hide()
+        hotkeysBox.hide()
     }
 })
 
@@ -208,7 +223,8 @@ screen.append(outputBox1)
 screen.append(outputBox2)
 screen.append(outputBox3)
 screen.append(outputBox4)
-screen.append(helpBox)
+screen.append(infoBox)
+screen.append(hotkeysBox)
 
 // screen.append(textInfo)
 
@@ -263,7 +279,7 @@ function writeHistory(data) {
 
 function readHistory(id) {
     const db = new Database('./translation-history.db')
-    const query = 'SELECT inputText FROM translationTable WHERE id = ?'
+    const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
     const get = db.prepare(query)
     const data = get.get(id)
     db.close()
@@ -286,6 +302,12 @@ function getAllId() {
     }
     db.close()
     return result
+}
+
+function parseData(inputDate) {
+    const [datePart, timePart] = inputDate.split(' ')
+    const [year, month, day] = datePart.split('-')
+    return `${timePart} ${day}.${month}.${year}`
 }
 
 // ------------------------------------- TextBuffer -------------------------------------
@@ -597,13 +619,15 @@ class TextBuffer {
         for (let line of textArray) {
             if (line.length > maxChars) {
                 let currentLines = Math.ceil(line.length / maxChars)
-                for (let i = 0; i < currentLines; i++) {
+                const indices = [...Array(currentLines).keys()]
+                for (let i of indices) {
                     let start = i * maxChars
                     let end = start + maxChars
                     let addText = line.slice(start, end)
                     textString.push(addText)
                 }
-            } else {
+            }
+            else {
                 textString.push(line)
             }
         }
@@ -750,6 +774,7 @@ inputBox.on('keypress', function (ch, key) {
             if (lastId) {
                 const lastText = readHistory(lastId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
+                infoBox.content = `${infoContent} History: ${curID}/${maxID} (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
             }
@@ -774,6 +799,7 @@ inputBox.on('keypress', function (ch, key) {
             if (nextId) {
                 const lastText = readHistory(nextId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
+                infoBox.content = `${infoContent} History: ${curID}/${maxID} (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
             }
