@@ -12,9 +12,9 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-Terminal user interface based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using multiple translation sources. All sources do not require an access token or any settings. Supports **automatic detection of source and target languages** between English and Russian at the code level.
+A terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using multiple translation sources. All sources do not require an access token or any customization. Supports **automatic source and target language detection** at the code level between English and Russian and access to **translation history** via [SQLite](https://github.com/WiseLibs/better-sqlite3).
 
-![Example](/example.jpg)
+![interface](/image/interface.jpg)
 
 ## 📚 Translation providers
 
@@ -70,20 +70,28 @@ If you plan to use this library for similar tasks where text input is required, 
 
 - `Enter` - is used each time to translate the text simultaneously with moving to a new line.
 
-- `Shift+<⬆/⬇>` - simultaneous scrolling of all output panels.
+- `Ctrl+V` - paste text from the clipboard (defined at the code level).
 
 - `Ctrl+<Q/W/E/R>` - copying translation results from output forms to the clipboard (for each translator, the key combination is indicated in brackets), and the selected form will change its color to green.
 
-- `Ctrl+V` - paste text from the clipboard (defined at the code level).
+- `Ctrl+Z`: Navigate through the history of translation requests from the end.
 
-- `Ctrl+C` - clear the text input field.
+- `Ctrl+X`: Navigate through the translation history in reverse order.
+
+- `Shift+<⬆/⬇>` - simultaneous scrolling of all output panels.
 
 - `Ctrl+<⬆/⬇>` - scrolling the text input panel without navigation.
 
 - `Ctrl+<⬅/➡>` - quick cursor navigation through phrases.
 
-- `Ctrl+DEL` - delete the phrase before the cursor.
-
 - `Ctrl+<A/D>` - move the cursor to the beginning or end of text input.
 
+- `Ctrl+Del` - delete the phrase before the cursor.
+
+- `Ctrl+C` - clear the text input field.
+
 - `Escape` - exit the program.
+
+To get hotkey help, use the keyboard shortcut: `Ctrl+S`
+
+![interface](/image/hotkeys.jpg)

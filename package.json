@@ -1,7 +1,7 @@
 {
   "name": "multranslate",
   "version": "0.4.1",
-  "description": "Cross-platform TUI for translating text using multiple providers simultaneously and support automatic detection of the source and destination language",
+  "description": "Cross-platform TUI for translating text in multiple translators simultaneously, with support for translation history and automatic language detection.",
   "keywords": [
     "TUI",
     "Blessed",
@@ -12,7 +12,9 @@
     "MyMemory",
     "Reverso",
     "Cursor",
-    "Custom-Cursor"
+    "Custom-Cursor",
+    "SQLite",
+    "Better-SQLite3"
   ],
   "author": "Lifailon",
   "license": "MIT",
@@ -30,9 +32,7 @@
     "axios": "^1.7.5",
     "better-sqlite3": "^11.3.0",
     "blessed": "^0.1.81",
-    "clipboardy": "^4.0.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "clipboardy": "^4.0.0"
   },
   "bin": {
     "multranslate": "multranslate-custom-cursor.js"
