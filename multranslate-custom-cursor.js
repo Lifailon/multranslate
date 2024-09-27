@@ -263,8 +263,15 @@ function detectToLanguage(lang) {
 let maxID = 0
 let curID = 0
 
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 function writeHistory(data) {
-    const db = new Database('./translation-history.db')
+    const dbPath = path.join(__dirname, 'translation-history.db')
+    const db = new Database(dbPath)
     db.exec(`
         CREATE TABLE IF NOT EXISTS translationTable (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,7 +285,8 @@ function writeHistory(data) {
 }
 
 function readHistory(id) {
-    const db = new Database('./translation-history.db')
+    const dbPath = path.join(__dirname, 'translation-history.db')
+    const db = new Database(dbPath)
     const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
     const get = db.prepare(query)
     const data = get.get(id)
@@ -286,7 +294,8 @@ function readHistory(id) {
     return data
 }
 function getAllId() {
-    const db = new Database('./translation-history.db')
+    const dbPath = path.join(__dirname, 'translation-history.db')
+    const db = new Database(dbPath)
     let result
     // Проверяем, что таблица существует
     const tableExists = db.prepare(`
@@ -774,7 +783,7 @@ inputBox.on('keypress', function (ch, key) {
             if (lastId) {
                 const lastText = readHistory(lastId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
-                infoBox.content = `${infoContent} History: ${curID}/${maxID} (${parseData(lastText.created_at)})`
+                infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
             }
@@ -799,7 +808,7 @@ inputBox.on('keypress', function (ch, key) {
             if (nextId) {
                 const lastText = readHistory(nextId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
-                infoBox.content = `${infoContent} History: ${curID}/${maxID} (${parseData(lastText.created_at)})`
+                infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
             }
