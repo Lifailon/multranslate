@@ -102,9 +102,9 @@ const outputBox2 = blessed.textarea({
     }
 })
 
-// Панель для отображения перевода от MyMemory
+// Панель для отображения перевода от Reverso
 const outputBox3 = blessed.textarea({
-    label: `MyMemory (Ctrl+E)`,
+    label: `Reverso (Ctrl+E)`,
     top: '60%',
     width: '49.5%',
     height: '39%',
@@ -128,9 +128,9 @@ const outputBox3 = blessed.textarea({
     }
 })
 
-// Панель для отображения перевода от Reverso
+// Панель для отображения перевода от MyMemory
 const outputBox4 = blessed.textarea({
-    label: `Reverso (Ctrl+R)`,
+    label: `MyMemory (Ctrl+R)`,
     top: '60%',
     left: '50.5%',
     width: '50%',
@@ -155,13 +155,13 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-let infoContent = ` Ctrl+S: Get help on Hotkeys.`
+let infoContent = `Ctrl+S: Get help on Hotkeys.`
 
 // Информация по навигации внизу формы
 const infoBox = blessed.text({
     content: infoContent, 
     bottom: 0,
-    left: 0,
+    left: 1,
     right: 0,
     align: 'center',
     style: {
@@ -176,6 +176,7 @@ const hotkeysBox = blessed.box({
     tags: true, // включить поддержку тегов для разметки
     top: 'center',
     left: 'center',
+    right: 'center',
     width: '70%',
     height: '50%',
     border: {
@@ -194,8 +195,8 @@ hotkeysBox.setContent(`
     {yellow-fg}Hotkeys{/yellow-fg}:
 
     {green-fg}Enter{/green-fg}: Translation
-    {cyan-fg}Ctrl+V{/cyan-fg}: Pasting text from the clipboard
     {cyan-fg}Ctrl+<Q/W/E/R>{/cyan-fg}: Copy translation results to clipboard
+    {cyan-fg}Ctrl+V{/cyan-fg}: Pasting text from the clipboard
     {cyan-fg}Ctrl+Z{/cyan-fg}: Navigation of the translations history from the end
     {cyan-fg}Ctrl+X{/cyan-fg}: Navigation of the translations history in reverse order
     {blue-fg}Shift+<⬆/⬇>{/blue-fg}: Scrolling of all output panels
@@ -262,6 +263,7 @@ function detectToLanguage(lang) {
 
 let maxID = 0
 let curID = 0
+const clearHistory = 500 // Количество объектов истории для хранения в базе данных
 
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -284,15 +286,6 @@ function writeHistory(data) {
     db.close()
 }
 
-function readHistory(id) {
-    const dbPath = path.join(__dirname, 'translation-history.db')
-    const db = new Database(dbPath)
-    const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
-    const get = db.prepare(query)
-    const data = get.get(id)
-    db.close()
-    return data
-}
 function getAllId() {
     const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
@@ -313,10 +306,29 @@ function getAllId() {
     return result
 }
 
+function readHistory(id) {
+    const dbPath = path.join(__dirname, 'translation-history.db')
+    const db = new Database(dbPath)
+    const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
+    const get = db.prepare(query)
+    const data = get.get(id)
+    db.close()
+    return data
+}
+
 function parseData(inputDate) {
     const [datePart, timePart] = inputDate.split(' ')
     const [year, month, day] = datePart.split('-')
     return `${timePart} ${day}.${month}.${year}`
+}
+
+function deleteHistory(id) {
+    const dbPath = path.join(__dirname, 'translation-history.db')
+    const db = new Database(dbPath)
+    const query = 'DELETE FROM translationTable WHERE id = ?'
+    const del = db.prepare(query)
+    del.run(id)
+    db.close()
 }
 
 // ------------------------------------- TextBuffer -------------------------------------
@@ -756,8 +768,8 @@ inputBox.on('keypress', function (ch, key) {
     // Обработка вставки текста из буфера обмена в поле ввода
     else if (key.name === 'v' && key.ctrl === true) {
         let clipboardText = clipboardy.readSync()
-        // Обновляем экранирование переноса строки для фиксации при перемещении нативного курсора
-        clipboardText = clipboardText.replace(/\n/g, '\r')
+        // Обновляем экранирование переноса строки для фиксации при перемещении нативного курсора и обрезаем пробелы в конце строки
+        clipboardText = clipboardText.replace(/\n/g, '\r').trim()
         let newText = buffer.getText().slice(0, buffer.getCursorPosition()) + clipboardText + buffer.getText().slice(buffer.getCursorPosition())
         // Добавляем текст из буфера обмена к текущему тексту
         buffer.setText(newText)
@@ -884,26 +896,6 @@ async function translateDeepLX(text) {
     }
 }
 
-// Функция перевода через MyMemory API
-// Source: https://mymemory.translated.net/doc/spec.php
-async function translateMyMemory(text) {
-    const fromLang = detectFromLanguage(text)
-    const toLang = detectToLanguage(fromLang)
-    const apiUrl = 'https://api.mymemory.translated.net/get'
-    try {
-        const response = await axios.get(apiUrl, {
-            timeout: 3000,
-            params: {
-                q: text,
-                langpair: `${fromLang}|${toLang}`
-            }
-        })
-        return response.data.responseData.translatedText
-    } catch (error) {
-        return error.message
-    }
-}
-
 // Функция перевода через Reverso API (ошибка: Parse Error: Invalid header value char)
 async function translateReverso(text) {
     const fromLang = detectFromLanguage(text)
@@ -971,6 +963,33 @@ async function translateReversoFetch(text) {
     }
 }
 
+// Функция перевода через MyMemory API
+// Source: https://mymemory.translated.net/doc/spec.php
+async function translateMyMemory(text) {
+    const fromLang = detectFromLanguage(text)
+    const toLang = detectToLanguage(fromLang)
+    const apiUrl = 'https://api.mymemory.translated.net/get'
+    try {
+        const response = await axios.get(apiUrl, {
+            timeout: 3000,
+            params: {
+                q: text,
+                langpair: `${fromLang}|${toLang}`
+            }
+        })
+        // Вернуть один результат перевода
+        // return response.data.responseData.translatedText
+        // Вернуть нескольк ответов
+        let results = ''
+        response.data.matches.forEach(element => {
+            results += element.translation + "\n"
+        })
+        return results
+    } catch (error) {
+        return error.message
+    }
+}
+
 // Функция обработки перевода
 async function handleTranslation() {
     // Заменяем символ возврата каретки на перенос строки без экранирования
@@ -978,8 +997,27 @@ async function handleTranslation() {
     if (textToTranslate.length > 1) {
         // Записываем содержимое запросов перевода в базу данных
         writeHistory(textToTranslate)
-        // Сбрасываем значение счетчика навигации по истории
-        maxID = 0
+        const allId = getAllId()
+        let nextId
+        if (maxID === 0) {
+            nextId = allId[allId.length-1]
+            curID = allId.length-1
+        }
+        else {
+            if (curID !== allId.length-1) {
+                curID++
+            }
+            nextId = allId[curID]
+        }
+        maxID = curID
+        if (curID >= clearHistory) {
+            deleteHistory(allId[0])
+            curID--
+            maxID--
+        }
+        const lastText = readHistory(nextId)
+        infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
+        // Запросы к API на перевод
         const [
             translatedText1,
             translatedText2,
@@ -988,8 +1026,8 @@ async function handleTranslation() {
         ] = await Promise.all([
             translateGoogle(textToTranslate),
             translateDeepLX(textToTranslate),
-            translateMyMemory(textToTranslate),
-            translateReversoFetch(textToTranslate)
+            translateReversoFetch(textToTranslate),
+            translateMyMemory(textToTranslate)
         ])
         outputBox1.setContent(translatedText1)
         outputBox2.setContent(translatedText2)
