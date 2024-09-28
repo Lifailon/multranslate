@@ -263,7 +263,7 @@ function detectToLanguage(lang) {
 
 let maxID = 0
 let curID = 0
-const clearHistory = 5 // Количество объектов истории для хранения в базе данных
+const clearHistory = 500 // Количество объектов истории для хранения в базе данных
 
 import path from 'path'
 import { fileURLToPath } from 'url'
