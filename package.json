@@ -1,6 +1,6 @@
 {
   "name": "multranslate",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Cross-platform TUI for translating text in multiple translators simultaneously, with support for translation history and automatic language detection.",
   "keywords": [
     "TUI",
