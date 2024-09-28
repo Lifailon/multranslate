@@ -263,7 +263,7 @@ function detectToLanguage(lang) {
 
 let maxID = 0
 let curID = 0
-const clearHistory = 500 // Количество объектов истории для хранения в базе данных
+const clearHistory = 5 // Количество объектов истории для хранения в базе данных
 
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -290,7 +290,6 @@ function getAllId() {
     const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
     let result
-    // Проверяем, что таблица существует
     const tableExists = db.prepare(`
         SELECT name FROM sqlite_master WHERE type='table' AND name='translationTable'
     `).get()
@@ -977,14 +976,18 @@ async function translateMyMemory(text) {
                 langpair: `${fromLang}|${toLang}`
             }
         })
-        // Вернуть один результат перевода
-        // return response.data.responseData.translatedText
         // Вернуть нескольк ответов
         let results = ''
-        response.data.matches.forEach(element => {
-            results += element.translation + "\n"
-        })
-        return results
+        if (response.data.matches) {
+            response.data.matches.forEach(element => {
+                results += element.translation + "\n"
+            })
+            return results
+        }
+        // Вернуть один результат перевода
+        else {
+            return response.data.responseData.translatedText
+        }
     } catch (error) {
         return error.message
     }
@@ -998,24 +1001,14 @@ async function handleTranslation() {
         // Записываем содержимое запросов перевода в базу данных
         writeHistory(textToTranslate)
         const allId = getAllId()
-        let nextId
-        if (maxID === 0) {
-            nextId = allId[allId.length-1]
-            curID = allId.length-1
-        }
-        else {
-            if (curID !== allId.length-1) {
-                curID++
-            }
-            nextId = allId[curID]
-        }
-        maxID = curID
+        maxID = allId.length-1
+        curID = maxID
+        const lastText = readHistory(allId[allId.length-1])
         if (curID >= clearHistory) {
             deleteHistory(allId[0])
             curID--
             maxID--
         }
-        const lastText = readHistory(nextId)
         infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
         // Запросы к API на перевод
         const [
