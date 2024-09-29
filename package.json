@@ -32,7 +32,8 @@
     "axios": "^1.7.5",
     "better-sqlite3": "^11.3.0",
     "blessed": "^0.1.81",
-    "clipboardy": "^4.0.0"
+    "clipboardy": "^4.0.0",
+    "commander": "^12.1.0"
   },
   "bin": {
     "multranslate": "multranslate-custom-cursor.js"

@@ -4,6 +4,37 @@ import blessed from 'blessed'
 import axios from 'axios'
 import clipboardy from 'clipboardy'
 import Database from 'better-sqlite3'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { readFileSync } from 'fs'
+import { Command } from 'commander'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const pkg = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8'))
+
+const translators = ['all', 'Google', 'DeepL', 'Reverso', 'MyMemory']
+let selectedTranslator = 'all'
+
+const program = new Command()
+
+program
+    .description(pkg.description)
+    .version(pkg.version)
+    .option('-t, --translator <name>', `select translator: ${translators.join(', ')}`, 'all')
+    .parse(process.argv)
+
+
+const inputTranslator = program.opts().translator.toLowerCase()
+const translatorsLowerCase = translators.map(t => t.toLowerCase())
+
+if (!translatorsLowerCase.includes(inputTranslator)) {
+    console.error(`Invalid parameter value. Choose one of: ${translators.join(', ')}`)
+    process.exit(1)
+}
+
+selectedTranslator = translators[translatorsLowerCase.indexOf(inputTranslator)]
 
 var screen = blessed.screen({
     autoPadding: true,
@@ -218,6 +249,43 @@ screen.key(['C-s'], function() {
     }
 })
 
+if (selectedTranslator === "Google") {
+    outputBox2.hidden = true
+    outputBox3.hidden = true
+    outputBox4.hidden = true
+    outputBox1.width = '100%'
+    outputBox1.height = '79%'
+    outputBox1.top = '20%'
+    outputBox1.left = '0%'
+}
+else if (selectedTranslator === "DeepL") {
+    outputBox1.hidden = true
+    outputBox3.hidden = true
+    outputBox4.hidden = true
+    outputBox2.width = '100%'
+    outputBox2.height = '79%'
+    outputBox2.top = '20%'
+    outputBox2.left = '0%'
+}
+else if (selectedTranslator === "Reverso") {
+    outputBox1.hidden = true
+    outputBox2.hidden = true
+    outputBox4.hidden = true
+    outputBox3.width = '100%'
+    outputBox3.height = '79%'
+    outputBox3.top = '20%'
+    outputBox3.left = '0%'
+}
+else if (selectedTranslator === "MyMemory") {
+    outputBox1.hidden = true
+    outputBox2.hidden = true
+    outputBox3.hidden = true
+    outputBox4.width = '100%'
+    outputBox4.height = '79%'
+    outputBox4.top = '20%'
+    outputBox4.left = '0%'
+}
+
 // Добавление панелей на экран
 screen.append(inputBox)
 screen.append(outputBox1)
@@ -226,8 +294,6 @@ screen.append(outputBox3)
 screen.append(outputBox4)
 screen.append(infoBox)
 screen.append(hotkeysBox)
-
-// screen.append(textInfo)
 
 // ------------------------------- Auto-detect Language ---------------------------------
 
@@ -261,18 +327,12 @@ function detectToLanguage(lang) {
 
 // -------------------------------------- SQLite ----------------------------------------
 
+const dbPath = path.join(__dirname, 'translation-history.db')
+const clearHistory = 500 // Количество объектов истории для хранения в базе данных
 let maxID = 0
 let curID = 0
-const clearHistory = 500 // Количество объектов истории для хранения в базе данных
-
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 function writeHistory(data) {
-    const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
     db.exec(`
         CREATE TABLE IF NOT EXISTS translationTable (
@@ -287,7 +347,6 @@ function writeHistory(data) {
 }
 
 function getAllId() {
-    const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
     let result
     const tableExists = db.prepare(`
@@ -306,7 +365,6 @@ function getAllId() {
 }
 
 function readHistory(id) {
-    const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
     const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
     const get = db.prepare(query)
@@ -322,7 +380,6 @@ function parseData(inputDate) {
 }
 
 function deleteHistory(id) {
-    const dbPath = path.join(__dirname, 'translation-history.db')
     const db = new Database(dbPath)
     const query = 'DELETE FROM translationTable WHERE id = ?'
     const del = db.prepare(query)
@@ -1011,21 +1068,55 @@ async function handleTranslation() {
         }
         infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
         // Запросы к API на перевод
-        const [
-            translatedText1,
-            translatedText2,
-            translatedText3,
-            translatedText4
-        ] = await Promise.all([
-            translateGoogle(textToTranslate),
-            translateDeepLX(textToTranslate),
-            translateReversoFetch(textToTranslate),
-            translateMyMemory(textToTranslate)
-        ])
-        outputBox1.setContent(translatedText1)
-        outputBox2.setContent(translatedText2)
-        outputBox3.setContent(translatedText3)
-        outputBox4.setContent(translatedText4)
+        if (selectedTranslator === "Google") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateGoogle(textToTranslate)
+            ])
+            outputBox1.setContent(translatedText)
+        }
+        else if (selectedTranslator === "DeepL") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateDeepLX(textToTranslate)
+            ])
+            outputBox2.setContent(translatedText)
+        }
+        else if (selectedTranslator === "Reverso") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateReversoFetch(textToTranslate)
+            ])
+            outputBox3.setContent(translatedText)
+        }
+        else if (selectedTranslator === "MyMemory") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateMyMemory(textToTranslate)
+            ])
+            outputBox4.setContent(translatedText)
+        }
+        else if (selectedTranslator === "all") {
+            const [
+                translatedText1,
+                translatedText2,
+                translatedText3,
+                translatedText4
+            ] = await Promise.all([
+                translateGoogle(textToTranslate),
+                translateDeepLX(textToTranslate),
+                translateReversoFetch(textToTranslate),
+                translateMyMemory(textToTranslate)
+            ])
+            outputBox1.setContent(translatedText1)
+            outputBox2.setContent(translatedText2)
+            outputBox3.setContent(translatedText3)
+            outputBox4.setContent(translatedText4)
+        }
         screen.render()
         inputBox.focus()
     }

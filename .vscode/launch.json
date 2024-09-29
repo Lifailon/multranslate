@@ -1,0 +1,70 @@
+{
+    "version": "0.3.0",
+    "configurations": [
+        {
+            "name": "Start all translators",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Google",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "args": [
+                "--translator",
+                "google"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "DeepL",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "args": [
+                "--translator",
+                "deepl"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Reverso",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "args": [
+                "--translator",
+                "reverso"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "MyMemory",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "args": [
+                "--translator",
+                "mymemory"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Japan",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "args": [
+                "--language",
+                "ja"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
