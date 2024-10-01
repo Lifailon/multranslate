@@ -1,7 +1,3 @@
-<p align="center">
-    <img src=image/logo.png width=128/>
-</p>
-
 <h2 align="center">
     multranslate
 </h2>
@@ -61,7 +57,7 @@ Options:
   -h, --help               display help for command
 ```
 
-## 🔧 Сборка
+## 🔨 Сборка
 
 Клонируйте репозиторий:
 

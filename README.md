@@ -1,7 +1,3 @@
-<p align="center">
-    <img src=image/logo.png width=128/>
-</p>
-
 <h2 align="center">
     multranslate
 </h2>
@@ -29,7 +25,7 @@ A terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/b
 
 > ⚠ **Reverso** does not support working via **Axios** (error: `Invalid header value char`), **Fetch** is used instead.
 
-## 🚀 Installation
+## 🚀 Install
 
 Use the [npm](https://www.npmjs.com/package/multranslate) package manager:
 
@@ -61,7 +57,7 @@ Options:
   -h, --help               display help for command
 ```
 
-## 🔧 Build
+## 🔨 Build
 
 Clone the repository:
 

@@ -22,10 +22,10 @@
     "type": "git",
     "url": "https://github.com/Lifailon/multranslate"
   },
-  "main": "multranslate-custom-cursor.js",
+  "main": "multranslate.js",
   "type": "module",
   "scripts": {
-    "start": "node multranslate-custom-cursor.js",
+    "start": "node multranslate.js",
     "dev": "node multranslate-native-cursor.js"
   },
   "dependencies": {
@@ -36,7 +36,7 @@
     "commander": "^12.1.0"
   },
   "bin": {
-    "multranslate": "multranslate-custom-cursor.js"
+    "multranslate": "multranslate.js"
   },
   "pkg": {
     "assets": [
