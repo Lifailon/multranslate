@@ -12,7 +12,7 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-A terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using multiple translation sources. All sources do not require an access token or other settings. Supports **automatic source and target language detection** at the code level between English and Russian (default) and access to **translation history** via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 queries, after which an automatic cleaning of old values from the history is applied).
+A terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using multiple translation sources. All sources do not require an access token or other settings. Supports **automatic source and target language** definition at code level between English and any of the [supported languages](#-supported-languages), as well as access to **translation history** via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 queries, after which the old values from history are automatically cleared).
 
 ![interface](/image/interface.jpg)
 
@@ -76,28 +76,28 @@ npm start
 
 You can change the language to automatically detect the language between English and any of those in the table below:
 
-| Parameter | Language   |
-| -         | -          |
-| ru        | Russian    |
-| ja        | Japanese   |
-| zh        | Chinese    |
-| ko        | Korean     |
-| ar        | Arabic     |
-| tr        | Turkish    |
-| uk        | Ukrainian  |
-| sk        | Slovak     |
-| pl        | Polish     |
-| de        | German     |
-| fr        | French     |
-| it        | Italian    |
-| es        | Spanish    |
-| el        | Greek      |
-| hu        | Hungarian  |
-| nl        | Dutch      |
-| sv        | Swedish    |
-| ro        | Romanian   |
-| cs        | Czech      |
-| da        | Danish     |
+| Parameter | Language          |
+| -         | -                 |
+| ru        | Russian (default) |
+| ja        | Japanese          |
+| zh        | Chinese           |
+| ko        | Korean            |
+| ar        | Arabic            |
+| tr        | Turkish           |
+| uk        | Ukrainian         |
+| sk        | Slovak            |
+| pl        | Polish            |
+| de        | German            |
+| fr        | French            |
+| it        | Italian           |
+| es        | Spanish           |
+| el        | Greek             |
+| hu        | Hungarian         |
+| nl        | Dutch             |
+| sv        | Swedish           |
+| ro        | Romanian          |
+| cs        | Czech             |
+| da        | Danish            |
 
 If a language is not on the list or if you have problems with translation, please open a request under [Issues](https://github.com/Lifailon/multranslate/issues).
 
