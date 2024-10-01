@@ -42,7 +42,12 @@
     "assets": [
       "node_modules/blessed/**/*",
       "node_modules/axios/**/*",
-      "node_modules/clipboardy/**/*"
+      "node_modules/clipboardy/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/url/**/*",
+      "node_modules/path/**/*",
+      "node_modules/fs/**/*",
+      "node_modules/commander/**/*"
     ],
     "targets": [
       "node18-win-x64",

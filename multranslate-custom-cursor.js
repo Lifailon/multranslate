@@ -14,7 +14,37 @@ const __dirname = path.dirname(__filename)
 
 const pkg = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8'))
 
-const translators = ['all', 'Google', 'DeepL', 'Reverso', 'MyMemory']
+const languages = [
+    'ru', // Russian (Русский)
+    'ja', // Japanese (Японский)
+    'zh', // Chinese (Китайский)
+    'ko', // Korean (Корейский)
+    'ar', // Arabic (Арабский)
+    'tr', // Turkish (Турецкий)
+    'uk', // Ukrainian (Украинский)
+    'sk', // Slovak (Словацкий)
+    'pl', // Polish (Польский)
+    'de', // German (Немецкий)
+    'fr', // French (Французский)
+    'it', // Italian (Итальянский)
+    'es', // Spanish (Испанский)
+    'el', // Greek (Греческий)
+    'hu', // Hungarian (Венгерский)
+    'nl', // Dutch (Нидерландский)
+    'sv', // Swedish (Шведский)
+    'ro', // Romanian (Румынский)
+    'cs', // Czech (Чешский)
+    'da', // Danish (Датский)
+]
+let selectedLanguage = 'ru'
+
+const translators = [
+    'all',
+    'Google',
+    'DeepL',
+    'Reverso',
+    'MyMemory'
+]
 let selectedTranslator = 'all'
 
 const program = new Command()
@@ -22,18 +52,24 @@ const program = new Command()
 program
     .description(pkg.description)
     .version(pkg.version)
+    .option('-l, --language <name>', `select language: ${languages.join(', ')}`, 'ru')
     .option('-t, --translator <name>', `select translator: ${translators.join(', ')}`, 'all')
     .parse(process.argv)
 
+const inputLanguage = program.opts().language.toLowerCase()
+const languagesLowerCase = languages.map(t => t.toLowerCase())
+if (!languagesLowerCase.includes(inputLanguage)) {
+    console.error(`Invalid parameter value. Choose one of: ${languages.join(', ')}`)
+    process.exit(1)
+}
+selectedLanguage = languages[languagesLowerCase.indexOf(inputLanguage)]
 
 const inputTranslator = program.opts().translator.toLowerCase()
 const translatorsLowerCase = translators.map(t => t.toLowerCase())
-
 if (!translatorsLowerCase.includes(inputTranslator)) {
     console.error(`Invalid parameter value. Choose one of: ${translators.join(', ')}`)
     process.exit(1)
 }
-
 selectedTranslator = translators[translatorsLowerCase.indexOf(inputTranslator)]
 
 var screen = blessed.screen({
@@ -297,17 +333,20 @@ screen.append(hotkeysBox)
 
 // ------------------------------- Auto-detect Language ---------------------------------
 
+// const languages = ['ru', 'ja', 'zh', 'ko', 'tr']
+// let selectedLanguage = 'ru'
+
 // Функция определения исходного языка
 function detectFromLanguage(text) {
-    const russianPattern = /[а-яА-Я]/g
+    const nonLanguagePattern = /[\s\n\r.,;:!?()\-"']/g
     const englishPattern = /[a-zA-Z]/g
-    const russianMatches = text.match(russianPattern) || []
-    const englishMatches = text.match(englishPattern) || []
-    const russianCount = russianMatches.length
+    const cleanText = text.replace(nonLanguagePattern, '')
+    const englishMatches = cleanText.match(englishPattern) || []
     const englishCount = englishMatches.length
-    if (russianCount >= englishCount) {
-        return 'ru'
-    } else if (russianCount <= englishCount) {
+    const otherLanguageCount = cleanText.length-englishCount
+    if (otherLanguageCount >= englishCount) {
+        return selectedLanguage
+    } else if (otherLanguageCount <= englishCount) {
         return 'en'
     } else {
         return ''
@@ -316,10 +355,10 @@ function detectFromLanguage(text) {
 
 // Функция определения целевого языка
 function detectToLanguage(lang) {
-    if (lang === 'ru') {
+    if (lang === 'en') {
+        return selectedLanguage
+    } else if (lang === selectedLanguage) {
         return 'en'
-    } else if (lang === 'en') {
-        return 'ru'
     } else {
         return ''
     }
