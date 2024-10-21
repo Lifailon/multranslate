@@ -51,7 +51,7 @@ history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv,
+  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, pt, el, hu, nl, sv,
                            ro, cs, da (default: "ru")
   -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory (default: "all")
   -h, --help               display help for command
@@ -91,6 +91,7 @@ You can change the language to automatically detect the language between English
 | fr        | French            |
 | it        | Italian           |
 | es        | Spanish           |
+| pt        | Portuguese        |
 | el        | Greek             |
 | hu        | Hungarian         |
 | nl        | Dutch             |

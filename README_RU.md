@@ -51,7 +51,7 @@ history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv,
+  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, pt, el, hu, nl, sv,
                            ro, cs, da (default: "ru")
   -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory (default: "all")
   -h, --help               display help for command
@@ -91,6 +91,7 @@ npm start
 | fr        | Французский               |
 | it        | Итальянский               |
 | es        | Испанский                 |
+| pt        | Португальский             |
 | el        | Греческий                 |
 | hu        | Венгерский                |
 | nl        | Нидерландский             |

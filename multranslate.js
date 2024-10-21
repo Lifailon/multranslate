@@ -28,6 +28,7 @@ const languages = [
     'fr', // French (Французский)
     'it', // Italian (Итальянский)
     'es', // Spanish (Испанский)
+    'pt', // Portuguese (Португальский) to 0.5.2 (issues #1)
     'el', // Greek (Греческий)
     'hu', // Hungarian (Венгерский)
     'nl', // Dutch (Нидерландский)
@@ -36,6 +37,7 @@ const languages = [
     'cs', // Czech (Чешский)
     'da', // Danish (Датский)
 ]
+// Language default
 let selectedLanguage = 'ru'
 
 const translators = [
@@ -332,9 +334,6 @@ screen.append(infoBox)
 screen.append(hotkeysBox)
 
 // ------------------------------- Auto-detect Language ---------------------------------
-
-// const languages = ['ru', 'ja', 'zh', 'ko', 'tr']
-// let selectedLanguage = 'ru'
 
 // Функция определения исходного языка
 function detectFromLanguage(text) {
