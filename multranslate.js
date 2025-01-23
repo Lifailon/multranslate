@@ -264,22 +264,21 @@ const hotkeysBox = blessed.box({
 hotkeysBox.setContent(`
   Hotkeys:
 
-    {green-fg}Enter{/green-fg}:              Translation
-    {cyan-fg}Ctrl+Enter{/cyan-fg}:         Move to a new line without translating text
-    {cyan-fg}Alt+<Q/W/E/R>{/cyan-fg}:      Copy translation results to clipboard
+    {green-fg}Enter{/green-fg}:              Translation and move to a new line
     {cyan-fg}Ctrl+V{/cyan-fg}:             Pasting text from the clipboard
-    {yellow-fg}Ctrl+<Z/N>{/yellow-fg}:         Navigation of the translations history from the end
-    {yellow-fg}Ctrl+<X/P>{/yellow-fg}:         Navigation of the translations history in reverse order
+    {cyan-fg}Alt+<Q/W/E/R>{/cyan-fg}:      Copy translation results to clipboard
+    {yellow-fg}Ctrl+<P/Z>{/yellow-fg}:         Move to the previous entry in the translation history
+    {yellow-fg}Ctrl+<N/X>{/yellow-fg}:         Move to the next entry in the translation history
     {blue-fg}Shift+<Up/Down>{/blue-fg}:    Simultaneous scrolling of all output panels
     {blue-fg}Ctrl+<Up/Down>{/blue-fg}:     Scrolling the text input panel without changing the cursor position
     {blue-fg}Ctrl+<Left/Right>{/blue-fg}:  Fast cursor navigation through words
-    {blue-fg}Ctrl+<A/E>{/blue-fg}:         Move the cursor to the beginning or end of text input
-    {blue-fg}Ctrl+<C/U>{/blue-fg}:         Clear text input field
+    {blue-fg}Ctrl+<A/E>{/blue-fg}:         Move the cursor to the ahead or end of text input
+    {blue-fg}Ctrl+<C/U/L>{/blue-fg}:       Clear text input field
     {blue-fg}Ctrl+<W/Del>{/blue-fg}:       Delete the word before the cursor
     {blue-fg}Del/Ctrl+K{/blue-fg}:         Delete the letter or character after the cursor.
     {red-fg}Escape{/red-fg}:             Exit the program
 
-  * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Option{/cyan-fg}/{cyan-fg}Meta{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg} (⌘)
+  * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Meta{/cyan-fg}/{cyan-fg}Option{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg}/{cyan-fg}Cmd{/cyan-fg} (⌘)
     
   GitHub Source: https://github.com/Lifailon/multranslate
 `)
@@ -764,31 +763,31 @@ buffer.disableNativeCursor()
 
 // Обработка нажатий клавиш для управления буфером
 inputBox.on('keypress', function (ch, key) {
-    // Перевести курсор в самое начало или конец текст
+    // Перевести курсор в самое начало (A)head или конец (E)nd
     if (key.name === 'a' && key.ctrl === true || key.name === 'a' && key.Command === true) {
         buffer.setCursorPosition(0)
     }
     else if (
-        // key.name === 'd' && key.ctrl === true || key.name === 'd' && key.Command === true ||
         key.name === 'e' && key.ctrl === true || key.name === 'e' && key.Command === true
     ) {
         buffer.setCursorPosition(buffer.getText().length)
     }
-    // Быстрая навигация курсора через слова (Ctrl/Shift/Alt+Left/Right)
+    // Быстрая навигация курсора через слова (Ctrl/Command/Shift/Alt+Left/Right)
     else if (
-        key.name === 'left' && key.ctrl === true  || key.name === 'left' && key.Command === true  || key.name === 'left' && key.shift === true  || key.name === 'left' && key.meta === true ||
-        key.name === 'right' && key.ctrl === true || key.name === 'right' && key.Command === true || key.name === 'right' && key.shift === true || key.meta === 'right' && key.meta === true
+        key.name === 'left' && key.ctrl === true  || key.name === 'left' && key.Command === true  || key.name === 'left' && key.shift === true  || key.name === 'left' && key.meta === true  || key.name === 'M-left' || key === 'M-left' ||
+        key.name === 'right' && key.ctrl === true || key.name === 'right' && key.Command === true || key.name === 'right' && key.shift === true || key.meta === 'right' && key.meta === true || key.name === 'M-right' || key === 'M-right'
     ) {
-        buffer.navigateFastCursor(key.name)
+        let replaceKey = key.name.replace("M-","")
+        buffer.navigateFastCursor(replaceKey)
     }
-    // Назначить методы перемещения курсора на стрелочки
+    // Назначить методы перемещения курсора на стрелочки (classic Left/Right)
     else if (key.name === 'left' && key.ctrl === false || key.name === 'left' && key.Command === false) {
         buffer.moveLeft()
     }
     else if (key.name === 'right' && key.ctrl === false || key.name === 'right' && key.Command === false) {
         buffer.moveRight()
     }
-    // Обработчик событий пролистывания панелей вывода
+    // Обработчик событий пролистывания всех панелей вывода (Shift+Up/Down)
     else if (key.name === 'up' && key.shift === true) {
         outputBox1.scroll(-1)
         outputBox2.scroll(-1)
@@ -803,23 +802,21 @@ inputBox.on('keypress', function (ch, key) {
         outputBox4.scroll(1)
 
     }
-    // Поднимаем поле ввода текста вверх для ручного скроллинга (Ctrl/Alt+Up) и Ctrl/Alt+Y (like vim)
+    // Поднимаем поле ввода текста вверх для ручного скроллинга (Ctrl/Alt+Up/Down)
     else if (
-        key.name === 'up' && key.ctrl === true || key.name === 'up' && key.Command === true || key.name === 'up' && key.meta === true || key.name === 'M-up' || key === 'M-up' // ||
-        // key.name === 'y' && key.ctrl === true  || key.name === 'y' && key.Command === true  || key.name === 'y' && key.meta === true ||
-        // key.name === 'C-y' || key === 'C-y' || key.name === 'M-y' || key === 'M-y'
+        key.name === 'up' && key.ctrl === true || key.name === 'up' && key.Command === true ||
+        key.name === 'up' && key.meta === true || key.name === 'M-up' || key === 'M-up'
     ) {
         inputBox.scroll(-1)
     }
     // Опускаем поле ввода текста вниз (Ctrl/Alt+Down) и Ctrl/Alt+E (like vim)
     else if (
-        key.name === 'down' && key.ctrl === true || key.name === 'down' && key.Command === true || key.name === 'down' && key.meta === true || key.name === 'M-down' || key === 'M-down' // ||
-        // key.name === 'e' && key.ctrl === true    || key.name === 'e' && key.Command === true    || key.name === 'e' && key.meta === true ||
-        // key.name === 'C-e' || key === 'C-e' || key.name === 'M-e' || key === 'M-e'
+        key.name === 'down' && key.ctrl === true || key.name === 'down' && key.Command === true ||
+        key.name === 'down' && key.meta === true || key.name === 'M-down' || key === 'M-down'
     ) {
         inputBox.scroll(1)
     }
-    // Навигация курсора между строками
+    // Навигация курсора между строками (classic Up/Down)
     else if (key.name === 'up') {
         buffer.navigateUpDown(inputBox,'up')
     }
@@ -838,7 +835,7 @@ inputBox.on('keypress', function (ch, key) {
             buffer.setText(newText)
         }
     }
-    // Удалить символ перед курсором
+    // Удалить символ перед курсором (only classic backspace)
     else if (key.name === 'backspace' && key.ctrl === false || key.name === 'backspace' && key.Command === false) {
         // Проверяем, что курсор не находится в начале содержимого буфера
         if (buffer.getCursorPosition() > 0) {
@@ -850,7 +847,7 @@ inputBox.on('keypress', function (ch, key) {
             buffer.setText(newText)
         }
     }
-    // Удалить символ после курсором
+    // Удалить символ после курсором (Del/Ctrl+K)
     else if (
         key.name === 'delete' || 
         key.name === 'k' && key.ctrl === true || key.name === 'k' && key.Command === true
@@ -872,19 +869,15 @@ inputBox.on('keypress', function (ch, key) {
         const newText = buffer.getText()
         buffer.setText(newText)
     }
-    // Копирование текста из поля ввода в буфер обмена
-    // else if (key.name === 'c' && key.shift === true) {
-    //     const textToCopy = buffer.getText()
-    //     clipboardy.writeSync(textToCopy)
-    // }
-    // Обработка очистки буфера
+    // Обработка очистки буфера текста (Ctrl+C/U/L) - (C)lear
     else if (
-        key.name === 'c' && key.ctrl === true    || key.name === 'u' && key.ctrl === true || 
-        key.name === 'c' && key.Command === true || key.name === 'u' && key.Command === true
+        key.name === 'c' && key.ctrl === true || key.name === 'c' && key.Command === true ||
+        key.name === 'u' && key.ctrl === true || key.name === 'u' && key.Command === true ||
+        key.name === 'l' && key.ctrl === true || key.name === 'l' && key.Command === true
     ) {
         buffer.setText("")
     }
-    // Обработка вставки текста из буфера обмена в поле ввода
+    // Обработка вставки текста из буфера обмена в поле ввода (Ctrl+V)
     else if (key.name === 'v' && key.ctrl === true) {
         let clipboardText = clipboardy.readSync()
         // Обновляем экранирование переноса строки для фиксации при перемещении нативного курсора и обрезаем пробелы в конце строки
@@ -895,10 +888,10 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор в конец текста
         buffer.setCursorPosition(buffer.getCursorPosition() + clipboardText.length)
     }
-    // Чтение из истории с конца (Ctrl+Z/N)
+    // Чтение из истории с конца (Ctrl+P/Z) - (P)revious
     else if (
-        key.name === 'z' && key.ctrl === true    || key.name === 'n' && key.ctrl === true ||
-        key.name === 'z' && key.Command === true || key.name === 'n' && key.Command === true
+        key.name === 'p' && key.ctrl === true || key.name === 'p' && key.Command === true ||
+        key.name === 'z' && key.ctrl === true || key.name === 'z' && key.Command === true
     ) {
         const allId = getAllId()
         if (allId.length !== 0) {
@@ -923,10 +916,10 @@ inputBox.on('keypress', function (ch, key) {
             }
         }
     }
-    // Чтение из истории в обратном порядке (Ctrl+X/P)
+    // Чтение из истории в обратном порядке (Ctrl+N/X) - (N)ext
     else if (
-        key.name === 'x' && key.ctrl === true || key.name === 'x' && key.Command === true ||
-        key.name === 'p' && key.ctrl === true || key.name === 'p' && key.Command === true
+        key.name === 'n' && key.ctrl === true || key.name === 'n' && key.Command === true ||
+        key.name === 'x' && key.ctrl === true || key.name === 'x' && key.Command === true
     ) {
         const allId = getAllId()
         if (allId.length !== 0) {
@@ -951,7 +944,7 @@ inputBox.on('keypress', function (ch, key) {
             }
         }
     }
-    // Если нажата любая другая клавиша и она не пустая, добавляем символ в текст
+    // Если нажата любая другая клавиша и она не пустая, добавляем символ в текстовый буффера
     else if (ch) {
         // Обновляем текст, добавляя символом следом за текущей позицией курсора
         const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + ch + buffer.getText().slice(buffer.getCursorPosition())
@@ -960,10 +953,10 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор вправо после добавления символа
         buffer.moveRight()
     }
-    // Добавить ручной скроллинг
+    // Возврат автоматического скроллинга
     if (!(
-        (key.name === 'up' && key.ctrl === true)    || (key.name === 'down' && key.ctrl === true) ||
-        (key.name === 'up' && key.Command === true) || (key.name === 'down' && key.Command === true)
+        (key.name === 'up' && key.ctrl === true)   || (key.name === 'up' && key.Command === true)   || (key.name === 'up' && key.meta === true) ||
+        (key.name === 'down' && key.ctrl === true) || (key.name === 'down' && key.Command === true) || (key.name === 'down' && key.meta === true) 
     )) {
         // Обновляем поле ввода текста
         inputBox.setValue(buffer.viewDisplayCursor())
@@ -1196,16 +1189,13 @@ async function handleTranslation() {
 
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
 inputBox.key(['enter'], async (ch, key) => {
-    // Проверяем, что Ctrl не зажат
-    if (!key.ctrl || !key.Command || !key.shift || !key.meta || key !== "C-enter" || key !== "S-enter" || key !== "M-enter" || key !== "A-enter") {
-        // Debug (отключить перевод для отладки интерфейса)
-        await handleTranslation()
-    }
+    // Debug (отключить перевод для отладки интерфейса)
+    await handleTranslation()
 })
 
 // ---------------------------------- Clipboard output ----------------------------------
 
-// Обработка копирования вывода в буфер обмена и подцветка выбранного поля вывода
+// Обработка копирования вывода в буфер обмена и подцветка выбранного поля вывода (Alt+Q/W/E/R)
 inputBox.key(['M-q'], function() {
     const textToCopy = outputBox1.getContent()
     clipboardy.writeSync(textToCopy)
