@@ -28,7 +28,6 @@ const languages = [
     'fr', // French (Французский)
     'it', // Italian (Итальянский)
     'es', // Spanish (Испанский)
-    'pt', // Portuguese (Португальский) to 0.5.2 (issues #1)
     'el', // Greek (Греческий)
     'hu', // Hungarian (Венгерский)
     'nl', // Dutch (Нидерландский)
@@ -36,6 +35,8 @@ const languages = [
     'ro', // Romanian (Румынский)
     'cs', // Czech (Чешский)
     'da', // Danish (Датский)
+    'pt', // Portuguese (Португальский) to 0.5.2 (#1)
+    'vi', // Vietnam (Вьетнамский) to 0.5.3 (#2)
 ]
 // Language default
 let selectedLanguage = 'ru'
