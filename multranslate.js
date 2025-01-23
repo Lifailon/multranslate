@@ -280,8 +280,8 @@ hotkeysBox.setContent(`
     (c) 2024, GitHub Source: https://github.com/Lifailon/multranslate
 `)
 
-screen.key(['C-s'], function() {
-    if (hotkeysBox.hidden === true){
+screen.key(['f1'], function() {
+    if (hotkeysBox.hidden === true){c
         hotkeysBox.show()
     } else {
         hotkeysBox.hide()
