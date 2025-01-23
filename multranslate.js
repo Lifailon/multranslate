@@ -267,21 +267,21 @@ hotkeysBox.setContent(`
     {green-fg}Enter{/green-fg}: Translation
     {cyan-fg}Ctrl+<Q/W/E/R>{/cyan-fg}: Copy translation results to clipboard
     {cyan-fg}Ctrl+V{/cyan-fg}: Pasting text from the clipboard
-    {cyan-fg}Ctrl+Z{/cyan-fg}: Navigation of the translations history from the end
-    {cyan-fg}Ctrl+X{/cyan-fg}: Navigation of the translations history in reverse order
-    {blue-fg}Shift+<⬆/⬇>{/blue-fg}: Scrolling of all output panels
-    {blue-fg}Ctrl+<⬆/⬇>{/blue-fg}: Scrolling the text input panel without navigation
-    {blue-fg}Ctrl+<⬅/➡>{/blue-fg}: Fast cursor navigation through words
+    {cyan-fg}Ctrl+<Z/N>{/cyan-fg}: Navigation of the translations history from the end
+    {cyan-fg}Ctrl+<X/P>{/cyan-fg}: Navigation of the translations history in reverse order
+    {blue-fg}Shift+<Up/Down>{/blue-fg}: Scrolling of all output panels
+    {blue-fg}Ctrl+<Up/Down>{/blue-fg}: Scrolling the text input panel without navigation
+    {blue-fg}<Shift/Ctrl>+<Left/Right>{/blue-fg}: Fast cursor navigation through words
     {blue-fg}Ctrl+<A/D>{/blue-fg}: Move the cursor to the beginning or end of the input
     {blue-fg}Ctrl+Del{/blue-fg}: Remove word before cursor
-    {blue-fg}Ctrl+C{/blue-fg}: Clear text input field
+    {blue-fg}Ctrl+<C/U>{/blue-fg}: Clear text input field
     {red-fg}Escape{/red-fg}: Exit the program
 
     (c) 2024, GitHub Source: https://github.com/Lifailon/multranslate
 `)
 
 screen.key(['f1'], function() {
-    if (hotkeysBox.hidden === true){c
+    if (hotkeysBox.hidden === true) {
         hotkeysBox.show()
     } else {
         hotkeysBox.hide()
@@ -767,12 +767,12 @@ inputBox.on('keypress', function (ch, key) {
     else if (key.name === 'd' && key.ctrl === true) {
         buffer.setCursorPosition(buffer.getText().length)
     }
-    // Быстрая навигация курсора через слова
-    else if (key.name === 'left' && key.ctrl === true) {
-        buffer.navigateFastCursor('left')
-    }
-    else if (key.name === 'right' && key.ctrl === true) {
-        buffer.navigateFastCursor('right')
+    // Быстрая навигация курсора через слова (Ctrl/Shift+Left/Right)
+    else if (
+        key.name === 'left' && key.ctrl === true || key.name === 'left' && key.shift === true ||
+        key.name === 'right' && key.ctrl === true || key.name === 'right' && key.shift === true
+    ) {
+        buffer.navigateFastCursor(key.name)
     }
     // Назначить методы перемещения курсора на стрелочки
     else if (key.name === 'left' && key.ctrl === false) {
@@ -857,7 +857,7 @@ inputBox.on('keypress', function (ch, key) {
     //     clipboardy.writeSync(textToCopy)
     // }
     // Обработка очистки буфера
-    else if (key.name === 'c' && key.ctrl === true) {
+    else if (key.name === 'c' && key.ctrl === true || key.name === 'u' && key.ctrl === true) {
         buffer.setText("")
     }
     // Обработка вставки текста из буфера обмена в поле ввода
@@ -871,8 +871,8 @@ inputBox.on('keypress', function (ch, key) {
         // Перемещаем курсор в конец текста
         buffer.setCursorPosition(buffer.getCursorPosition() + clipboardText.length)
     }
-    // Чтение из истории с конца
-    else if (key.name === 'z' && key.ctrl === true) {
+    // Чтение из истории с конца (Ctrl+Z/N)
+    else if (key.name === 'z' && key.ctrl === true || key.name === 'n' && key.ctrl === true) {
         const allId = getAllId()
         if (allId.length !== 0) {
             let lastId
@@ -896,8 +896,8 @@ inputBox.on('keypress', function (ch, key) {
             }
         }
     }
-    // Чтение из истории в обратном порядке
-    else if (key.name === 'x' && key.ctrl === true) {
+    // Чтение из истории в обратном порядке (Ctrl+X/P)
+    else if (key.name === 'x' && key.ctrl === true || key.name === 'p' && key.ctrl === true) {
         const allId = getAllId()
         if (allId.length !== 0) {
             let nextId
