@@ -225,7 +225,7 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-let infoContent = `Ctrl+S: Get help on Hotkeys.`
+let infoContent = `F1: Get help on Hotkeys.`
 
 // Информация по навигации внизу формы
 const infoBox = blessed.text({
@@ -265,6 +265,7 @@ hotkeysBox.setContent(`
     {yellow-fg}Hotkeys{/yellow-fg}:
 
     {green-fg}Enter{/green-fg}: Translation
+    {cyan-fg}Ctrl+Enter{/cyan-fg}: Move to a new line without translating text
     {cyan-fg}Ctrl+<Q/W/E/R>{/cyan-fg}: Copy translation results to clipboard
     {cyan-fg}Ctrl+V{/cyan-fg}: Pasting text from the clipboard
     {cyan-fg}Ctrl+<Z/N>{/cyan-fg}: Navigation of the translations history from the end
@@ -277,7 +278,7 @@ hotkeysBox.setContent(`
     {blue-fg}Ctrl+<C/U>{/blue-fg}: Clear text input field
     {red-fg}Escape{/red-fg}: Exit the program
 
-    (c) 2024, GitHub Source: https://github.com/Lifailon/multranslate
+    GitHub Source: https://github.com/Lifailon/multranslate
 `)
 
 screen.key(['f1'], function() {
@@ -1162,9 +1163,12 @@ async function handleTranslation() {
 }
 
 // Обработка нажатия Enter для перевода текста вместе с переносом на новую строку
-inputBox.key(['enter'], async () => {
-    // Debug (отключить перевод для отладки интерфейса)
-    await handleTranslation()
+inputBox.key(['enter'], async (ch, key) => {
+    // Проверяем, что Ctrl не зажат
+    if (!key.ctrl) {
+        // Debug (отключить перевод для отладки интерфейса)
+        await handleTranslation()
+    }
 })
 
 // ---------------------------------- Clipboard output ----------------------------------
