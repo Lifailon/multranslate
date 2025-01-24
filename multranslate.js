@@ -1521,7 +1521,7 @@ inputBox.key(['M-4'], function() {
 })
 
 inputBox.key(['M-5'], function() {
-    const textToCopy = outputBox4.getContent()
+    const textToCopy = outputBox5.getContent()
     clipboardy.writeSync(textToCopy)
     inputBox.style.border.fg = 'blue'
     outputBox5.style.border.fg = 'green'
@@ -1530,7 +1530,7 @@ inputBox.key(['M-5'], function() {
 })
 
 inputBox.key(['M-x'], function() {
-    const textToCopy = outputBox4.getContent()
+    const textToCopy = outputBox5.getContent()
     clipboardy.writeSync(textToCopy)
     inputBox.style.border.fg = 'blue'
     outputBox5.style.border.fg = 'green'
