@@ -94,7 +94,7 @@ var screen = blessed.screen({
 
 // Панель для ввода текста
 const inputBox = blessed.textarea({
-    // label: `Input (Alt+C)`,
+    // label: `Input (Alt+5/Alt+C)`,
     top: '0%',
     width: '100%',
     height: '20%',
@@ -267,7 +267,7 @@ hotkeysBox.setContent(`
 
     {green-fg}Ctrl+Enter{/green-fg}:         Translation of text without breaking to a new line
     {cyan-fg}Ctrl+V{/cyan-fg}:             Pasting text from the clipboard
-    {cyan-fg}Alt+C{/cyan-fg}:              Copy text from the input field to clipboard
+    {cyan-fg}Alt+<C/5>{/cyan-fg}:          Copy text from the input field to clipboard
     {cyan-fg}Alt+<1/2/3/4>{/cyan-fg}:      Copy translation results to clipboard
     {yellow-fg}Ctrl+<P/Z>{/yellow-fg}:         Move to the previous entry in the translation history
     {yellow-fg}Ctrl+<N/X>{/yellow-fg}:         Move to the next entry in the translation history
@@ -281,6 +281,8 @@ hotkeysBox.setContent(`
     {red-fg}Escape{/red-fg}:             Exit the program
 
   * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Meta{/cyan-fg}/{cyan-fg}Option{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg}/{cyan-fg}Cmd{/cyan-fg} (⌘)
+
+  Version: ${pkg.version}
     
   GitHub Source: https://github.com/Lifailon/multranslate
 `)
@@ -376,20 +378,32 @@ const clearHistory = 500 // Количество объектов истории
 let maxID = 0
 let curID = 0
 
-function writeHistory(data) {
+// Функция для записи в БД
+function writeHistory(inputData, googleData, deeplxData, reversoData, mymemoryData) {
     const db = new Database(dbPath)
     db.exec(`
         CREATE TABLE IF NOT EXISTS translationTable (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             inputText TEXT NOT NULL,
+            googleText TEXT,
+            deeplxText TEXT,
+            reversoText TEXT,
+            mymemoryText TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `)
-    const insert = db.prepare('INSERT INTO translationTable (inputText) VALUES (?)')
-    insert.run(data)
+    const insert = db.prepare('INSERT INTO translationTable (inputText, googleText, deeplxText, reversoText, mymemoryText) VALUES (?, ?, ?, ?, ?)')
+    insert.run(
+        inputData,
+        googleData,
+        deeplxData,
+        reversoData,
+        mymemoryData
+    )
     db.close()
 }
 
+// Функция для получения всех уникальных id в БД
 function getAllId() {
     const db = new Database(dbPath)
     let result
@@ -408,21 +422,24 @@ function getAllId() {
     return result
 }
 
+// Функция для чтения из истории
 function readHistory(id) {
     const db = new Database(dbPath)
-    const query = 'SELECT inputText,created_at FROM translationTable WHERE id = ?'
+    const query = `SELECT inputText,googleText,deeplxText,reversoText,mymemoryText,created_at FROM translationTable WHERE id = ?`
     const get = db.prepare(query)
     const data = get.get(id)
     db.close()
     return data
 }
 
+// Функция для преобразования даны из БД
 function parseData(inputDate) {
     const [datePart, timePart] = inputDate.split(' ')
     const [year, month, day] = datePart.split('-')
     return `${timePart} ${day}.${month}.${year}`
 }
 
+// Функция для удаления из истории
 function deleteHistory(id) {
     const db = new Database(dbPath)
     const query = 'DELETE FROM translationTable WHERE id = ?'
@@ -764,7 +781,7 @@ const buffer = new TextBuffer()
 buffer.disableNativeCursor()
 
 // Обработка нажатий клавиш для управления буфером
-inputBox.on('keypress', function (ch, key) {
+inputBox.on('keypress', async function (ch, key) {
     // Debug: вывод комбинации
     // outputBox1.setContent("Name: " + key.name + "\r" + "Full Name: " + key.full + "\r" + "Ctrl: " + key.ctrl + "\r" + "Shift: " + key.shift + "\r" + "Alt: " + key.meta)
     // Перевести курсор в самое начало (A)head или конец (E)nd
@@ -868,16 +885,24 @@ inputBox.on('keypress', function (ch, key) {
         buffer.setCursorPosition(buffer.getCursorPosition() + 4)
         buffer.setText(newText)
     }
-    // Обрабатываем перенос строки для Enter (перенос строки добавляется автоматически)
-    else if (key.name === 'return') {
+    // Обрабатываем перенос строки для Enter (перенос строки добавляется автоматически) без комбинаций с зажатыми клавишами
+    else if (key.name === 'return' && key.ctrl === false && key.shift === false && key.meta === false) {
         const newText = buffer.getText().slice(0, buffer.getCursorPosition()) + "" + buffer.getText().slice(buffer.getCursorPosition())
         buffer.setText(newText)
         buffer.moveRight()
     }
-    // Перевод текста через Ctrl+Enter
-    else if (key.name === 'linefeed') {
-        const newText = buffer.getText()
-        buffer.setText(newText)
+    // Асинхронный перевод текста через Ctrl+Enter (linefeed) или Enter (return) с любой из зажатых комбинаций клавиш
+    else if (key.name === 'linefeed' || key.name === 'return') {
+        // Debug (отключить перевод для отладки интерфейса)
+        await handleTranslation()
+        // Сбрасываем покраску после перевода
+        inputBox.style.border.fg = 'blue'
+        outputBox1.style.border.fg = 'blue'
+        outputBox2.style.border.fg = 'blue'
+        outputBox3.style.border.fg = 'blue'
+        outputBox4.style.border.fg = 'blue'
+        screen.render()
+        inputBox.focus()
     }
     // Обработка очистки буфера текста (Ctrl+C/U/L) - (C)lear
     else if (
@@ -918,11 +943,26 @@ inputBox.on('keypress', function (ch, key) {
                 lastId = allId[curID]
             }
             if (lastId) {
+                // Извлекаем данные из БД по id
                 const lastText = readHistory(lastId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
+                // Обновляем статус
                 infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
+                // Обновляем текст в поле ввода, курсор и текст в окнах вывода
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
+                outputBox1.setContent(
+                    lastText.googleText?.replace(/\n/g, '\r')
+                )
+                outputBox2.setContent(
+                    lastText.deeplxText?.replace(/\n/g, '\r')
+                )
+                outputBox3.setContent(
+                    lastText.reversoText?.replace(/\n/g, '\r')
+                )
+                outputBox4.setContent(
+                    lastText.mymemoryText?.replace(/\n/g, '\r')
+                )
             }
         }
     }
@@ -951,6 +991,18 @@ inputBox.on('keypress', function (ch, key) {
                 infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
+                outputBox1.setContent(
+                    lastText.googleText?.replace(/\n/g, '\r')
+                )
+                outputBox2.setContent(
+                    lastText.deeplxText?.replace(/\n/g, '\r')
+                )
+                outputBox3.setContent(
+                    lastText.reversoText?.replace(/\n/g, '\r')
+                )
+                outputBox4.setContent(
+                    lastText.mymemoryText?.replace(/\n/g, '\r')
+                )
             }
         }
     }
@@ -1008,6 +1060,8 @@ async function translateGoogle(text) {
 // Source: https://github.com/bropines/Deeplx-vercel
 async function translateDeepLX(text) {
     const fromLang = detectFromLanguage(text)
+    // Заменяем символы переноса строки (не воспринимается API) на временный символ (©) или экранирование (\\n)
+    text = text.replace(/\n/g, '©')
     const toLang = detectToLanguage(fromLang)
     const apiUrl = 'https://deeplx-vercel-phi.vercel.app/api/translate'
     try {
@@ -1021,7 +1075,10 @@ async function translateDeepLX(text) {
                 'Content-Type': 'application/json'
             }
         })
-        return response.data.data
+        // Обновляем временный символ на перенос строки
+        return response.data.data.replace(/©/g, '\n')
+        // Нескольк ответов
+        // console.log(response.data.alternatives)
     } catch (error) {
         return error.message
     }
@@ -1125,24 +1182,12 @@ async function translateMyMemory(text) {
     }
 }
 
-// Функция обработки перевода
+// Функция обработки перевода и сохранения в историю
 async function handleTranslation() {
     // Заменяем символ возврата каретки на перенос строки без экранирования
     const textToTranslate = buffer.getText().trim().replace(/\r/g, '\n')
     if (textToTranslate.length > 1) {
-        // Записываем содержимое запросов перевода в базу данных
-        writeHistory(textToTranslate)
-        const allId = getAllId()
-        maxID = allId.length-1
-        curID = maxID
-        const lastText = readHistory(allId[allId.length-1])
-        if (curID >= clearHistory) {
-            deleteHistory(allId[0])
-            curID--
-            maxID--
-        }
-        infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
-        // Запросы к API на перевод
+        // Вызываем асинхронные запросы к API на перевод
         if (selectedTranslator === "Google") {
             const [
                 translatedText,
@@ -1150,6 +1195,7 @@ async function handleTranslation() {
                 translateGoogle(textToTranslate)
             ])
             outputBox1.setContent(translatedText)
+            writeHistory(textToTranslate,translatedText,null,null,)
         }
         else if (selectedTranslator === "DeepL") {
             const [
@@ -1158,6 +1204,7 @@ async function handleTranslation() {
                 translateDeepLX(textToTranslate)
             ])
             outputBox2.setContent(translatedText)
+            writeHistory(textToTranslate,null,translatedText,null,null)
         }
         else if (selectedTranslator === "Reverso") {
             const [
@@ -1166,6 +1213,7 @@ async function handleTranslation() {
                 translateReversoFetch(textToTranslate)
             ])
             outputBox3.setContent(translatedText)
+            writeHistory(textToTranslate,null,null,translatedText,null)
         }
         else if (selectedTranslator === "MyMemory") {
             const [
@@ -1174,6 +1222,7 @@ async function handleTranslation() {
                 translateMyMemory(textToTranslate)
             ])
             outputBox4.setContent(translatedText)
+            writeHistory(textToTranslate,null,null,null,translatedText)
         }
         else if (selectedTranslator === "all") {
             const [
@@ -1191,25 +1240,31 @@ async function handleTranslation() {
             outputBox2.setContent(translatedText2)
             outputBox3.setContent(translatedText3)
             outputBox4.setContent(translatedText4)
+            // Записываем содержимое запросов перевода в базу данных
+            writeHistory(
+                textToTranslate,
+                translatedText1,
+                translatedText2,
+                translatedText3,
+                translatedText4
+            )
         }
+        // Определяем id и удаляем старые записи из БД
+        const allId = getAllId()
+        maxID = allId.length-1
+        curID = maxID
+        const lastText = readHistory(allId[allId.length-1])
+        if (curID >= clearHistory) {
+            deleteHistory(allId[0])
+            curID--
+            maxID--
+        }
+        // Обновляем статус в интерфейсе
+        infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
         screen.render()
         inputBox.focus()
     }
 }
-
-// Обработка нажатия Ctrl+Enter для перевода текста вместе с переносом на новую строку
-inputBox.key(['linefeed'], async (ch, key) => {
-    // Debug (отключить перевод для отладки интерфейса)
-    await handleTranslation()
-    // Сбрасываем покраску после перевода
-    inputBox.style.border.fg = 'blue'
-    outputBox1.style.border.fg = 'blue'
-    outputBox2.style.border.fg = 'blue'
-    outputBox3.style.border.fg = 'blue'
-    outputBox4.style.border.fg = 'blue'
-    screen.render()
-    inputBox.focus()
-})
 
 // ---------------------------------- Clipboard output ----------------------------------
 
@@ -1264,6 +1319,18 @@ inputBox.key(['M-4'], function() {
 
 // Обработка копирования из поля ввода текста в буфер обмена (Alt+C)
 inputBox.key(['M-c'], function() {
+    const textToCopy = buffer.getText()
+    clipboardy.writeSync(textToCopy)
+    inputBox.style.border.fg = 'green'
+    outputBox1.style.border.fg = 'blue'
+    outputBox2.style.border.fg = 'blue'
+    outputBox3.style.border.fg = 'blue'
+    outputBox4.style.border.fg = 'blue'
+    screen.render()
+    inputBox.focus()
+})
+
+inputBox.key(['M-5'], function() {
     const textToCopy = buffer.getText()
     clipboardy.writeSync(textToCopy)
     inputBox.style.border.fg = 'green'
