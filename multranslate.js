@@ -7,13 +7,18 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { readFileSync } from 'fs'
+import { writeFileSync } from 'fs';
 import { Command } from 'commander'
 
+// Определяем текущий путь для доступа к файлу БД, ключу OpenAI и конфигурации package
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const apiKeyPath = path.join(__dirname, 'openai-key.txt');
 
+// Читаем файл конфигурации для получения описания и версии приложения
 const pkg = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8'))
 
+// Определяем статические параметры
 const languages = [
     'ru', // Russian (Русский)
     'ja', // Japanese (Японский)
@@ -36,29 +41,59 @@ const languages = [
     'cs', // Czech (Чешский)
     'da', // Danish (Датский)
     'pt', // Portuguese (Португальский) to 0.5.2 (#1)
-    'vi', // Vietnam (Вьетнамский) to 0.5.3 (#2)
+    'vi', // Vietnam (Вьетнамский) to 0.6.0 (#2)
 ]
 // Language default
 let selectedLanguage = 'ru'
+
+// Карта для определения языка
+const mapLanguages = {
+        'en': 'English',
+        'ru': 'Russian',
+        'ja': 'Japanese',
+        'zh': 'Chinese',
+        'ko': 'Korean',
+        'ar': 'Arabic',
+        'tr': 'Turkish',
+        'uk': 'Ukrainian',
+        'sk': 'Slovak',
+        'pl': 'Polish',
+        'de': 'German',
+        'fr': 'French',
+        'it': 'Italian',
+        'es': 'Spanish',
+        'el': 'Greek',
+        'hu': 'Hungarian',
+        'nl': 'Dutch',
+        'sv': 'Swedish',
+        'ro': 'Romanian',
+        'cs': 'Czech',
+        'da': 'Danish',
+        'pt': 'Portuguese',
+        'vi': 'Vietnam',
+}
 
 const translators = [
     'all',
     'Google',
     'DeepL',
     'Reverso',
-    'MyMemory'
+    'MyMemory',
+    'OpenAI'
 ]
 let selectedTranslator = 'all'
 
+// Обработка аргументов
 const program = new Command()
-
 program
     .description(pkg.description)
     .version(pkg.version)
     .option('-l, --language <name>', `select language: ${languages.join(', ')}`, 'ru')
     .option('-t, --translator <name>', `select translator: ${translators.join(', ')}`, 'all')
+    .option('-k, --key <value>', 'API key for using the OpenAI translator (will be saved for future use)')
     .parse(process.argv)
 
+// Language
 const inputLanguage = program.opts().language.toLowerCase()
 const languagesLowerCase = languages.map(t => t.toLowerCase())
 if (!languagesLowerCase.includes(inputLanguage)) {
@@ -67,6 +102,7 @@ if (!languagesLowerCase.includes(inputLanguage)) {
 }
 selectedLanguage = languages[languagesLowerCase.indexOf(inputLanguage)]
 
+// Translator
 const inputTranslator = program.opts().translator.toLowerCase()
 const translatorsLowerCase = translators.map(t => t.toLowerCase())
 if (!translatorsLowerCase.includes(inputTranslator)) {
@@ -75,6 +111,31 @@ if (!translatorsLowerCase.includes(inputTranslator)) {
 }
 selectedTranslator = translators[translatorsLowerCase.indexOf(inputTranslator)]
 
+// Проверка API ключа
+let apiKey = program.opts().key
+
+// Если ключ передан, сохраняем его в файл
+if (apiKey) {
+    try {
+        writeFileSync(apiKeyPath, apiKey, { encoding: 'utf8' })
+    } catch (error) {
+        console.error(`Error saving API key to file: ${error.message}`)
+        process.exit(1)
+    }
+}
+// Если ключ не передан, загружаем его из файла
+else {
+    try {
+        apiKey = readFileSync(apiKeyPath, 'utf8').trim()
+    } catch (error) {
+        if (selectedTranslator === 'OpenAI') {
+            console.error('API key not found.')
+            process.exit(1)
+        }
+    }
+}
+
+// blessed => screen
 var screen = blessed.screen({
     autoPadding: true,
     smartCSR: true,
@@ -94,7 +155,7 @@ var screen = blessed.screen({
 
 // Панель для ввода текста
 const inputBox = blessed.textarea({
-    // label: `Input (Alt+5/Alt+C)`,
+    // label: `Input (Alt+C)`,
     top: '0%',
     width: '100%',
     height: '20%',
@@ -123,9 +184,6 @@ const inputBox = blessed.textarea({
 // Панель для отображения перевода из Google
 const outputBox1 = blessed.textarea({
     label: `Google (Alt+1)`,
-    top: '20%',
-    width: '49.5%',
-    height: '40%',
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -149,10 +207,6 @@ const outputBox1 = blessed.textarea({
 // Панель для отображения перевода из DeepLX
 const outputBox2 = blessed.textarea({
     label: `DeepL (Alt+2)`,
-    top: '20%',
-    left: '50.5%',
-    width: '50%',
-    height: '40%',
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -176,9 +230,6 @@ const outputBox2 = blessed.textarea({
 // Панель для отображения перевода из Reverso
 const outputBox3 = blessed.textarea({
     label: `Reverso (Alt+3)`,
-    top: '60%',
-    width: '49.5%',
-    height: '39%',
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
@@ -202,6 +253,29 @@ const outputBox3 = blessed.textarea({
 // Панель для отображения перевода из MyMemory
 const outputBox4 = blessed.textarea({
     label: `MyMemory (Alt+4)`,
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        inverse: true
+    },
+    border: {
+        type: 'line'
+    },
+    style: {
+        fg: 'white',
+        bg: 'black',
+        border: {
+          fg: 'blue'
+        },
+        scrollbar: {
+          bg: 'white'
+        }
+    }
+})
+
+// Панель для отображения перевода из OpenAI (#4)
+const outputBox5 = blessed.textarea({
+    label: `OpenAI (Alt+5 or Alt+X)`,
     top: '60%',
     left: '50.5%',
     width: '50%',
@@ -226,7 +300,7 @@ const outputBox4 = blessed.textarea({
     }
 })
 
-let infoContent = `F1: Get help on Hotkeys.`
+let infoContent = '\x1b[32mCtrl+S\x1b[37m: Translation. \x1b[32mF1\x1b[37m: Get help on Hotkeys.'
 
 // Информация по навигации внизу формы
 const infoBox = blessed.text({
@@ -265,10 +339,11 @@ const hotkeysBox = blessed.box({
 hotkeysBox.setContent(`
   Hotkeys:
 
-    {green-fg}Ctrl+Enter{/green-fg}:         Translation of text without breaking to a new line
+    {green-fg}F2{/green-fg}:                 Switch between all translators and OpenAI
+    {green-fg}Ctrl+<Enter/S>{/green-fg}:     Translation of text without breaking to a new line
     {cyan-fg}Ctrl+V{/cyan-fg}:             Pasting text from the clipboard
-    {cyan-fg}Alt+<C/5>{/cyan-fg}:          Copy text from the input field to clipboard
-    {cyan-fg}Alt+<1/2/3/4>{/cyan-fg}:      Copy translation results to clipboard
+    {cyan-fg}Alt+C{/cyan-fg}:              Copy text from the input field to clipboard
+    {cyan-fg}Alt+<1/2/3/4/5>{/cyan-fg}:    Copy translation results to clipboard
     {yellow-fg}Ctrl+<P/Z>{/yellow-fg}:         Move to the previous entry in the translation history
     {yellow-fg}Ctrl+<N/X>{/yellow-fg}:         Move to the next entry in the translation history
     {blue-fg}Shift+<Up/Down>{/blue-fg}:    Simultaneous scrolling of all output panels
@@ -287,6 +362,110 @@ hotkeysBox.setContent(`
   GitHub Source: https://github.com/Lifailon/multranslate
 `)
 
+// Функция для динамической настройки размера окна с переводчиком
+function selectWindow(selectedTranslatorHidden) {
+    if (selectedTranslatorHidden === "Google") {
+        outputBox1.width = '100%'
+        outputBox1.height = '79%'
+        outputBox1.top = '20%'
+        outputBox1.left = '0%'
+        outputBox1.hidden = false
+        outputBox2.hidden = true
+        outputBox3.hidden = true
+        outputBox4.hidden = true
+        outputBox5.hidden = true
+    }
+    else if (selectedTranslatorHidden === "DeepL") {
+        outputBox2.width = '100%'
+        outputBox2.height = '79%'
+        outputBox2.top = '20%'
+        outputBox2.left = '0%'
+        outputBox1.hidden = true
+        outputBox2.hidden = false
+        outputBox3.hidden = true
+        outputBox4.hidden = true
+        outputBox5.hidden = true
+    }
+    else if (selectedTranslatorHidden === "Reverso") {
+        outputBox3.width = '100%'
+        outputBox3.height = '79%'
+        outputBox3.top = '20%'
+        outputBox3.left = '0%'
+        outputBox1.hidden = true
+        outputBox2.hidden = true
+        outputBox3.hidden = false
+        outputBox4.hidden = true
+        outputBox5.hidden = true
+    }
+    else if (selectedTranslatorHidden === "MyMemory") {
+        outputBox4.width = '100%'
+        outputBox4.height = '79%'
+        outputBox4.top = '20%'
+        outputBox4.left = '0%'
+        outputBox1.hidden = true
+        outputBox2.hidden = true
+        outputBox3.hidden = true
+        outputBox4.hidden = false
+        outputBox5.hidden = true
+    }
+    else if (selectedTranslatorHidden === "OpenAI") {
+        selectedTranslator = 'OpenAI'
+        outputBox3.height = '0%'
+        outputBox4.height = '0%'
+        outputBox5.width = '100%'
+        outputBox5.height = '79%'
+        outputBox5.top = '20%'
+        outputBox5.left = '0%'
+        outputBox1.hidden = true
+        outputBox2.hidden = true
+        outputBox3.hidden = true
+        outputBox4.hidden = true
+        outputBox5.hidden = false
+    }
+    else if (selectedTranslatorHidden === "all") {
+        selectedTranslator = 'all'
+        outputBox1.width = '49.5%'
+        outputBox1.height = '40%'
+        outputBox1.top = '20%'
+        outputBox1.left = '0%'
+        outputBox2.width = '50%'
+        outputBox2.height = '40%'
+        outputBox2.top = '20%'
+        outputBox2.left = '50.5%'
+        outputBox3.width = '49.5%'
+        outputBox3.height = '39%'
+        outputBox3.top = '60%'
+        outputBox3.left = '0%'
+        outputBox4.width = '50%'
+        outputBox4.height = '39%'
+        outputBox4.top = '60%'
+        outputBox4.left = '50.5%'
+        outputBox5.width = '0%'
+        outputBox5.height = '0%'
+        outputBox5.top = '0%'
+        outputBox5.left = '0%'
+        outputBox1.hidden = false
+        outputBox2.hidden = false
+        outputBox3.hidden = false
+        outputBox4.hidden = false
+        outputBox5.hidden = true
+    }
+    screen.render()
+}
+
+selectWindow(selectedTranslator)
+
+// Добавление панелей на экран
+screen.append(inputBox)
+screen.append(outputBox1)
+screen.append(outputBox2)
+screen.append(outputBox3)
+screen.append(outputBox4)
+screen.append(outputBox5)
+screen.append(infoBox)
+screen.append(hotkeysBox)
+
+// Вызов окна справки
 screen.key(['f1'], function() {
     if (hotkeysBox.hidden === true) {
         hotkeysBox.show()
@@ -295,51 +474,14 @@ screen.key(['f1'], function() {
     }
 })
 
-if (selectedTranslator === "Google") {
-    outputBox2.hidden = true
-    outputBox3.hidden = true
-    outputBox4.hidden = true
-    outputBox1.width = '100%'
-    outputBox1.height = '79%'
-    outputBox1.top = '20%'
-    outputBox1.left = '0%'
-}
-else if (selectedTranslator === "DeepL") {
-    outputBox1.hidden = true
-    outputBox3.hidden = true
-    outputBox4.hidden = true
-    outputBox2.width = '100%'
-    outputBox2.height = '79%'
-    outputBox2.top = '20%'
-    outputBox2.left = '0%'
-}
-else if (selectedTranslator === "Reverso") {
-    outputBox1.hidden = true
-    outputBox2.hidden = true
-    outputBox4.hidden = true
-    outputBox3.width = '100%'
-    outputBox3.height = '79%'
-    outputBox3.top = '20%'
-    outputBox3.left = '0%'
-}
-else if (selectedTranslator === "MyMemory") {
-    outputBox1.hidden = true
-    outputBox2.hidden = true
-    outputBox3.hidden = true
-    outputBox4.width = '100%'
-    outputBox4.height = '79%'
-    outputBox4.top = '20%'
-    outputBox4.left = '0%'
-}
-
-// Добавление панелей на экран
-screen.append(inputBox)
-screen.append(outputBox1)
-screen.append(outputBox2)
-screen.append(outputBox3)
-screen.append(outputBox4)
-screen.append(infoBox)
-screen.append(hotkeysBox)
+// Смена окна переводчика между all и OpenAI 
+screen.key(['f2'], function() {
+    if (outputBox5.hidden === true) {
+        selectWindow('OpenAI')
+    } else {
+        selectWindow('all')
+    }
+})
 
 // ------------------------------- Auto-detect Language ---------------------------------
 
@@ -379,7 +521,7 @@ let maxID = 0
 let curID = 0
 
 // Функция для записи в БД
-function writeHistory(inputData, googleData, deeplxData, reversoData, mymemoryData) {
+function writeHistory(inputData, googleData, deeplxData, reversoData, mymemoryData, openaiData) {
     const db = new Database(dbPath)
     db.exec(`
         CREATE TABLE IF NOT EXISTS translationTable (
@@ -389,16 +531,18 @@ function writeHistory(inputData, googleData, deeplxData, reversoData, mymemoryDa
             deeplxText TEXT,
             reversoText TEXT,
             mymemoryText TEXT,
+            openaiText TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `)
-    const insert = db.prepare('INSERT INTO translationTable (inputText, googleText, deeplxText, reversoText, mymemoryText) VALUES (?, ?, ?, ?, ?)')
+    const insert = db.prepare('INSERT INTO translationTable (inputText, googleText, deeplxText, reversoText, mymemoryText, openaiText) VALUES (?, ?, ?, ?, ?, ?)')
     insert.run(
         inputData,
         googleData,
         deeplxData,
         reversoData,
-        mymemoryData
+        mymemoryData,
+        openaiData
     )
     db.close()
 }
@@ -425,7 +569,7 @@ function getAllId() {
 // Функция для чтения из истории
 function readHistory(id) {
     const db = new Database(dbPath)
-    const query = `SELECT inputText,googleText,deeplxText,reversoText,mymemoryText,created_at FROM translationTable WHERE id = ?`
+    const query = `SELECT inputText,googleText,deeplxText,reversoText,mymemoryText,openaiText,created_at FROM translationTable WHERE id = ?`
     const get = db.prepare(query)
     const data = get.get(id)
     db.close()
@@ -784,7 +928,7 @@ buffer.disableNativeCursor()
 inputBox.on('keypress', async function (ch, key) {
     // Debug: вывод комбинации
     // outputBox1.setContent("Name: " + key.name + "\r" + "Full Name: " + key.full + "\r" + "Ctrl: " + key.ctrl + "\r" + "Shift: " + key.shift + "\r" + "Alt: " + key.meta)
-    // Перевести курсор в самое начало (A)head или конец (E)nd
+    // Перевести курсор в самое начало (A)head или конец (E)nd (like vim #3)
     if (key.name === 'a' && key.ctrl === true || key.name === 'a' && key.Command === true) {
         buffer.setCursorPosition(0)
     }
@@ -830,7 +974,7 @@ inputBox.on('keypress', async function (ch, key) {
     ) {
         inputBox.scroll(-1)
     }
-    // Опускаем поле ввода текста вниз (Ctrl/Alt+Down) и Ctrl/Alt+E (like vim #3)
+    // Опускаем поле ввода текста вниз (Ctrl/Alt+Down)
     else if (
         key.name === 'down' && key.ctrl === true || key.name === 'down' && key.Command === true ||
         key.name === 'down' && key.meta === true || key.full === 'M-down'
@@ -891,18 +1035,22 @@ inputBox.on('keypress', async function (ch, key) {
         buffer.setText(newText)
         buffer.moveRight()
     }
-    // Асинхронный перевод текста через Ctrl+Enter (linefeed) или Enter (return) с любой из зажатых комбинаций клавиш
-    else if (key.name === 'linefeed' || key.name === 'return') {
-        // Debug (отключить перевод для отладки интерфейса)
-        await handleTranslation()
-        // Сбрасываем покраску после перевода
-        inputBox.style.border.fg = 'blue'
-        outputBox1.style.border.fg = 'blue'
-        outputBox2.style.border.fg = 'blue'
-        outputBox3.style.border.fg = 'blue'
-        outputBox4.style.border.fg = 'blue'
-        screen.render()
-        inputBox.focus()
+    // Асинхронный перевод текста через Ctrl+S/Ctrl+Enter (linefeed) или Enter (return) с любой из зажатых комбинаций клавиш
+    else if (
+            key.name === 'linefeed' || key.name === 'return' ||
+            key.name === 's' && key.ctrl === true
+        ) {
+            // Debug (отключить перевод для отладки интерфейса)
+            await handleTranslation()
+            // Сбрасываем покраску после перевода
+            inputBox.style.border.fg = 'blue'
+            outputBox1.style.border.fg = 'blue'
+            outputBox2.style.border.fg = 'blue'
+            outputBox3.style.border.fg = 'blue'
+            outputBox4.style.border.fg = 'blue'
+            outputBox5.style.border.fg = 'blue'
+            screen.render()
+            inputBox.focus()
     }
     // Обработка очистки буфера текста (Ctrl+C/U/L) - (C)lear
     else if (
@@ -963,6 +1111,9 @@ inputBox.on('keypress', async function (ch, key) {
                 outputBox4.setContent(
                     lastText.mymemoryText?.replace(/\n/g, '\r')
                 )
+                outputBox5.setContent(
+                    lastText.openaiText?.replace(/\n/g, '\r')
+                )
             }
         }
     }
@@ -1002,6 +1153,9 @@ inputBox.on('keypress', async function (ch, key) {
                 )
                 outputBox4.setContent(
                     lastText.mymemoryText?.replace(/\n/g, '\r')
+                )
+                outputBox5.setContent(
+                    lastText.openaiText?.replace(/\n/g, '\r')
                 )
             }
         }
@@ -1165,7 +1319,7 @@ async function translateMyMemory(text) {
                 langpair: `${fromLang}|${toLang}`
             }
         })
-        // Вернуть нескольк ответов
+        // Вернуть несколько ответов
         let results = ''
         if (response.data.matches) {
             response.data.matches.forEach(element => {
@@ -1182,6 +1336,45 @@ async function translateMyMemory(text) {
     }
 }
 
+// Функция перевода через OpenAI official API (#4)
+// API Docs: https://platform.openai.com/docs/api-reference/introduction
+async function translateOpenAI(text) {
+    const fromLang = detectFromLanguage(text)
+    const toLangCode = detectToLanguage(fromLang)
+    const toLang = mapLanguages[toLangCode]
+    const apiUrl = 'https://api.openai.com/v1/chat/completions'
+    try {
+        const response = await axios.post(
+            apiUrl,
+            {
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'user',
+                        // Prompt for LLM
+                        content: `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or commentsTranslate the following text into ${toLang}:\n"${text}"\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+                    }
+                ],
+                temperature: 0.7
+            },
+            {
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${apiKey}`,
+                },
+            }
+        )
+        return response.data.choices[0].message.content
+    } catch (error) {
+        // Ошибка ответа
+        if (error.response) {
+            return `Error response (${error.response.status}): ${error.response.data.error.message}` // \nFrom lang: ${fromLang}\nTo lang: ${toLang}
+        }
+        // Ошибка запроса
+        return `Error: ${error.message}`
+    }
+}
+
 // Функция обработки перевода и сохранения в историю
 async function handleTranslation() {
     // Заменяем символ возврата каретки на перенос строки без экранирования
@@ -1195,7 +1388,7 @@ async function handleTranslation() {
                 translateGoogle(textToTranslate)
             ])
             outputBox1.setContent(translatedText)
-            writeHistory(textToTranslate,translatedText,null,null,)
+            writeHistory(textToTranslate,translatedText,null,null,null)
         }
         else if (selectedTranslator === "DeepL") {
             const [
@@ -1204,7 +1397,7 @@ async function handleTranslation() {
                 translateDeepLX(textToTranslate)
             ])
             outputBox2.setContent(translatedText)
-            writeHistory(textToTranslate,null,translatedText,null,null)
+            writeHistory(textToTranslate,null,translatedText,null,null,null)
         }
         else if (selectedTranslator === "Reverso") {
             const [
@@ -1213,7 +1406,7 @@ async function handleTranslation() {
                 translateReversoFetch(textToTranslate)
             ])
             outputBox3.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,translatedText,null)
+            writeHistory(textToTranslate,null,null,translatedText,null,null)
         }
         else if (selectedTranslator === "MyMemory") {
             const [
@@ -1222,7 +1415,16 @@ async function handleTranslation() {
                 translateMyMemory(textToTranslate)
             ])
             outputBox4.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,null,translatedText)
+            writeHistory(textToTranslate,null,null,null,translatedText,null)
+        }
+        else if (selectedTranslator === "OpenAI") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateOpenAI(textToTranslate)
+            ])
+            outputBox5.setContent(translatedText)
+            writeHistory(textToTranslate,null,null,null,null,translatedText)
         }
         else if (selectedTranslator === "all") {
             const [
@@ -1246,7 +1448,8 @@ async function handleTranslation() {
                 translatedText1,
                 translatedText2,
                 translatedText3,
-                translatedText4
+                translatedText4,
+                null
             )
         }
         // Определяем id и удаляем старые записи из БД
@@ -1317,6 +1520,24 @@ inputBox.key(['M-4'], function() {
     inputBox.focus()
 })
 
+inputBox.key(['M-5'], function() {
+    const textToCopy = outputBox4.getContent()
+    clipboardy.writeSync(textToCopy)
+    inputBox.style.border.fg = 'blue'
+    outputBox5.style.border.fg = 'green'
+    screen.render()
+    inputBox.focus()
+})
+
+inputBox.key(['M-x'], function() {
+    const textToCopy = outputBox4.getContent()
+    clipboardy.writeSync(textToCopy)
+    inputBox.style.border.fg = 'blue'
+    outputBox5.style.border.fg = 'green'
+    screen.render()
+    inputBox.focus()
+})
+
 // Обработка копирования из поля ввода текста в буфер обмена (Alt+C)
 inputBox.key(['M-c'], function() {
     const textToCopy = buffer.getText()
@@ -1326,18 +1547,7 @@ inputBox.key(['M-c'], function() {
     outputBox2.style.border.fg = 'blue'
     outputBox3.style.border.fg = 'blue'
     outputBox4.style.border.fg = 'blue'
-    screen.render()
-    inputBox.focus()
-})
-
-inputBox.key(['M-5'], function() {
-    const textToCopy = buffer.getText()
-    clipboardy.writeSync(textToCopy)
-    inputBox.style.border.fg = 'green'
-    outputBox1.style.border.fg = 'blue'
-    outputBox2.style.border.fg = 'blue'
-    outputBox3.style.border.fg = 'blue'
-    outputBox4.style.border.fg = 'blue'
+    outputBox5.style.border.fg = 'blue'
     screen.render()
     inputBox.focus()
 })
