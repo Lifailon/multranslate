@@ -75,7 +75,7 @@ npm start
 
 ## Supported languages
 
-You can change the language to automatically detect the language between English and any of those in the table below:
+You can change the language for automatic definition between English and any of those presented in the table below:
 
 | Parameter | Language          |
 | -         | -                 |
@@ -114,7 +114,7 @@ You can also use any of the translators individually by specifying the appropria
         </td>
     </tr>
     <tr>
-        <td><img src=/image/google-fr.jpg width=600/></td>
+        <td><img src=/image/google-tr.jpg width=600/></td>
         <td><img src=/image/deepl-de.jpg width=600/></td>
     </tr>
     <tr>
@@ -128,14 +128,6 @@ You can also use any of the translators individually by specifying the appropria
         <td><img src=/image/mymemory-es.jpg width=600/></td>
     </tr>
 </table>
-
-## Contributing
-
-If your language is not listed or you have problems with translation, please open an issue in the [Issues](https://github.com/Lifailon/multranslate/issues).
-
-You can also offer another source for translating the text through `API`, which does not require an access key.
-
-If you like to use this interface, you can make a contribution, just translate this readme file to your own language and pass it through [Pull Request](https://github.com/Lifailon/multranslate/pulls).
 
 ## Hotkeys
 
@@ -159,6 +151,21 @@ Use the `F1` key to get help on available keyboard shortcuts:
 
 ![interface](/image/hotkeys.jpg)
 
+## Contributing
+
+If your language is not listed or you have problems with translation, please open an issue in the [Issues](https://github.com/Lifailon/multranslate/issues).
+
+You can also offer another source for translating the text through `API`, which does not require an access key.
+
+If you like to use this interface, you can make a contribution, just translate this readme file to your own language and pass it through [Pull Request](https://github.com/Lifailon/multranslate/pulls).
+
+## Backlog
+
+- Rewrite code to TypeScript.
+- Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
+- Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
+
+
 ## Text buffer
 
 The Blessed library is great and has no analogues in its functionality for `JavaScript` or `TypeScript` (and even surpasses some libraries in other languages), but it is outdated (not supported since 2015) and has a number of technical limitations, for example, there is no ability to navigate the cursor in the text input field. For this reason, a mechanism for managing the input content through a text buffer was implemented, which allows you to use a custom cursor for navigation using keyboard arrows and automatic scrolling.
@@ -166,9 +173,3 @@ The Blessed library is great and has no analogues in its functionality for `Java
 If you plan to use this library for similar tasks where text input is required, then add `class TextBuffer` and control of hotkeys (`keypress`) via `inputBox.on()` to your code. It took me several weeks to achieve full functionality for working with text, the key problem is the built-in line break (`autowrap`) and the shift of the custom cursor.
 
 Over the course of daily use for 6 months, I can confirm that it works stably.
-
-## Backlog
-
-- Rewrite code to TypeScript.
-- Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
-- Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
