@@ -428,6 +428,9 @@ function selectWindow(selectedTranslatorHidden) {
     }
     else if (selectedTranslatorHidden === "all") {
         selectedTranslator = 'all'
+        // Иключить отрисовку 5-й панели
+        outputBox5.width = '0%'
+        // Настройка окна
         outputBox1.width = '49.5%'
         outputBox1.height = '40%'
         outputBox1.top = '20%'
@@ -444,10 +447,6 @@ function selectWindow(selectedTranslatorHidden) {
         outputBox4.height = '39%'
         outputBox4.top = '60%'
         outputBox4.left = '50.5%'
-        outputBox5.width = '0%'
-        outputBox5.height = '0%'
-        outputBox5.top = '0%'
-        outputBox5.left = '0%'
         outputBox1.hidden = false
         outputBox2.hidden = false
         outputBox3.hidden = false
