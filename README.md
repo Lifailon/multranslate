@@ -12,7 +12,7 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-Multi-platform terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources, as well as LLM via [OpenAI](https://openai.com). All sources do not require an access token (API key, with the *exception of OpenAI*) or other settings. Supports automatic source and target language definition at code level between English and any of the [supported languages](#-supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
+Cross-platform terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources, as well as LLM via [OpenAI](https://openai.com). All sources do not require an access token (API key, with the *exception of OpenAI*) or other settings. Supports automatic source and target language definition at code level between English and any of the [supported languages](#-supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
 
 ![interface](/image/interface.jpg)
 
@@ -45,13 +45,13 @@ multranslate --help
 
 Usage: multranslate [options]
 
-Cross-platform TUI for translating text in multiple translators simultaneously, with support for 
+Cross-platform TUI for translating text in multiple translators simultaneously and LLM via OpenAI, with support for
 translation history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv, 
-  ro, cs, da, pt, vi (default: "ru")
+  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv, ro,
+  cs, da, pt, vi (default: "ru")
   -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
   -k, --key <value>        API key for using the OpenAI translator (will be saved for future use)
   -h, --help               display help for command
@@ -164,7 +164,6 @@ If you like to use this interface, you can make a contribution, just translate t
 - Rewrite code to TypeScript.
 - Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
 - Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
-
 
 ## Text buffer
 

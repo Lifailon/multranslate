@@ -410,8 +410,12 @@ function selectWindow(selectedTranslatorHidden) {
     }
     else if (selectedTranslatorHidden === "OpenAI") {
         selectedTranslator = 'OpenAI'
+        // Иключить перезатирание панели
+        outputBox1.height = '0%'
+        outputBox2.height = '0%'
         outputBox3.height = '0%'
         outputBox4.height = '0%'
+        // Настройка окна
         outputBox5.width = '100%'
         outputBox5.height = '79%'
         outputBox5.top = '20%'
@@ -1095,7 +1099,7 @@ inputBox.on('keypress', async function (ch, key) {
                 const lastText = readHistory(lastId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
                 // Обновляем статус
-                infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
+                infoBox.content = `${infoContent} History: \x1b[32m${curID+1}\x1b[37m/\x1b[32m${maxID+1}\x1b[37m (${parseData(lastText.created_at)})`
                 // Обновляем текст в поле ввода, курсор и текст в окнах вывода
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
@@ -1139,7 +1143,7 @@ inputBox.on('keypress', async function (ch, key) {
             if (nextId) {
                 const lastText = readHistory(nextId)
                 const newText = lastText.inputText.replace(/\n/g, '\r')
-                infoBox.content = `${infoContent} History: ${curID+1}/${maxID+1} (${parseData(lastText.created_at)})`
+                infoBox.content = `${infoContent} History: \x1b[32m${curID+1}\x1b[37m/\x1b[32m${maxID+1}\x1b[37m (${parseData(lastText.created_at)})`
                 buffer.setText(newText)
                 buffer.setCursorPosition(newText.length)
                 outputBox1.setContent(
@@ -1364,14 +1368,15 @@ async function translateOpenAI(text) {
                 },
             }
         )
-        return response.data.choices[0].message.content
+        // Удаляем кавычки в ответе для AI
+        return response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '')
     } catch (error) {
         // Ошибка ответа
         if (error.response) {
-            return `Error response (${error.response.status}): ${error.response.data.error.message}` // \nFrom lang: ${fromLang}\nTo lang: ${toLang}
+            return `\x1b[31mError response\x1b[0m: ${error.response.data.error.message}\nResponse status: ${error.response.status}`
         }
         // Ошибка запроса
-        return `Error: ${error.message}`
+        return `\x1b[31mError\x1b[0m: ${error.message}`
     }
 }
 
@@ -1463,7 +1468,7 @@ async function handleTranslation() {
             maxID--
         }
         // Обновляем статус в интерфейсе
-        infoBox.content = `${infoContent} History: ${curID+1}/${curID+1} (${parseData(lastText.created_at)})`
+        infoBox.content = `${infoContent} History: \x1b[32m${curID+1}\x1b[37m/\x1b[32m${curID+1}\x1b[37m (${parseData(lastText.created_at)})`
         screen.render()
         inputBox.focus()
     }
