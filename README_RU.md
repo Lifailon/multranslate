@@ -3,29 +3,28 @@
 </h2>
 
 <p align="center">
-<a href="https://www.npmjs.com/package/multranslate"><img title="GitHub License"src="https://img.shields.io/npm/v/multranslate?logo=npm&logoColor=red"></a>
-<a href="https://www.npmjs.com/package/multranslate"><img title="GitHub License"src="https://img.shields.io/github/languages/top/Lifailon/multranslate?logo=JavaScript&color=yellow"></a>
-<a href="https://github.com/Lifailon/multranslate/blob/rsa/LICENSE"><img title="GitHub License"src="https://img.shields.io/github/license/Lifailon/multranslate?logo=readme&logoColor=white&color=white"></a>
+<a href="https://www.npmjs.com/package/multranslate"><img title="NPM"src="https://img.shields.io/npm/v/multranslate?logo=npm&logoColor=red"></a>
+<a href="https://www.npmjs.com/package/multranslate"><img title="Language"src="https://img.shields.io/github/languages/top/Lifailon/multranslate?logo=JavaScript&color=yellow"></a>
+<a href="https://github.com/Lifailon/multranslate/blob/rsa/LICENSE"><img title="License"src="https://img.shields.io/github/license/Lifailon/multranslate?logo=readme&logoColor=white&color=white"></a>
 </p>
 
 <h4 align="center">
  <a href="README.md">English</a> | <strong>Русский</strong>
 </h4>
 
-Терминальный пользовательский интерфейс (TUI) на базе библиотеки [Blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких источников перевода. Все источники не требуют токена доступа или других настроек. Поддерживает **автоматическое определение исходного и целевого языка** на уровне кода между английским и любым из поддерживаемых языков (русский по умолчанию), а также доступ к **истории переводов** через [SQLite](https://github.com/WiseLibs/better-sqlite3) (до 500 запросов, после чего применяется автоматическая чистка старых значений из истории).
+Кроссплатформенный терминальный пользовательский интерфейс (TUI) на базе библиотеки [Blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких популярных источников перевода, а также LLM через [OpenAI](https://openai.com). Все источники перевода не требуют токена доступа (API ключа, за *исключением OpenAI*) или других настроек. Поддерживает автоматическое определение исходного и целевого языка на уровне кода между английским и любым из поддерживаемых языков (русский по умолчанию), а также доступ к истории переводов через [SQLite](https://github.com/WiseLibs/better-sqlite3) (до 500 запросов, после чего используется автоматическая очистка старых записей из истории).
 
 ![interface](/image/interface.jpg)
 
-## 📚 Источники перевода
+## Источники перевода
 
-- [Google](https://translate.google.com) - бесплатный и безлимитный [API](https://github.com/vitalets/google-translate-api) с использованием [serverless](https://github.com/olavoparno/translate-serverless-vercel) размещенный на Vercel. Доступно для перевода более 5000 символов.
-- [DeepL](https://www.deepl.com) - бесплатный API через [DeepLX](https://github.com/OwO-Network/DeepLX) с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless) размещенный на [Vercel](https://github.com/bropines/Deeplx-vercel). Присутствуют ограничения на частое количество запросов перевода, может иметь ограничения при использование большого количества символов (официальное ограничение в 5000 символов на запрос).
-- [Reverso](https://www.reverso.net) - самый стабильный, бесплатный и без ограничений на количество символов (версия на сайте ограничена 2000 символам и 900 через приложение, через `API` возможно получить до 8000). Не содержит официальной документации, запрос был получен с официального сайта через *DevTools*.
+- [Google](https://translate.google.com) - бесплатный и безлимитный [API](https://github.com/vitalets/google-translate-api) с использованием [serverless](https://github.com/olavoparno/translate-serverless-vercel) размещенный на платформе Vercel. Доступно для перевода более 5000 символов.
+- [DeepL](https://www.deepl.com) - бесплатный API через [DeepLX](https://github.com/OwO-Network/DeepLX) с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless) размещенный на платформе [Vercel](https://github.com/bropines/Deeplx-vercel). Присутствуют ограничения на частое количество запросов перевода, а также может иметь ограничение при использование большого количества символов (официальное ограничение в 5000 символов на запрос).
+- [Reverso](https://www.reverso.net) - самый стабильный, бесплатный и без ограничений на количество символов (версия на сайте ограничена 2000 символам и 900 в приложение, через `API` возможно получить до 8000). Не содержит официальной документации, запрос был получен с официального сайта через *DevTools*.
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (ограничение в 500 символов на запрос). Поддерживает до 3 вариантов ответа для коротких запросов.
+- [OpenAI](https://platform.openai.com/docs/overview) - перевод текста с использованием LLM (необходимо передать ключ API через параметр, который сохраняется в файле для дальнейшего использования).
 
-> ⚠ **Reverso** не поддерживает работу через **Axios** (ошибка: `Invalid header value char`), вместо этого используется **Fetch**.
-
-## 🚀 Установка
+## Установка
 
 Используйте менеджер пакетов [npm](https://www.npmjs.com/package/multranslate):
 
@@ -46,18 +45,19 @@ multranslate --help
 
 Usage: multranslate [options]
 
-Cross-platform TUI for translating text in multiple translators simultaneously, with support for translation
-history and automatic language detection.
+Cross-platform TUI for translating text in multiple translators simultaneously and LLM via OpenAI, with support for
+translation history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, pt, el, hu, nl, sv,
-                           ro, cs, da (default: "ru")
-  -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory (default: "all")
+  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv, ro,
+  cs, da, pt, vi (default: "ru")
+  -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
+  -k, --key <value>        API key for using the OpenAI translator (will be saved for future use)
   -h, --help               display help for command
 ```
 
-## 🔨 Сборка
+## Сборка
 
 Клонируйте репозиторий:
 
@@ -66,15 +66,16 @@ git clone https://github.com/Lifailon/multranslate
 cd multranslate
 ```
 
-Запустите приложения:
+Установите зависимости и запустите приложения:
 
 ```shell
+npm install
 npm start
 ```
 
-## 💬 Поддерживаемые языки
+## Поддерживаемые языки
 
-Вы можете изменить язык, для автоматического определения языка между английским и любым из тех, что представлен ниже в таблице:
+Вы можете изменить язык, для автоматического определения между английским и любым из тех, что представлен в таблице ниже:
 
 | Параметр  | Язык                      |
 | -         | -                         |
@@ -91,7 +92,6 @@ npm start
 | fr        | Французский               |
 | it        | Итальянский               |
 | es        | Испанский                 |
-| pt        | Португальский             |
 | el        | Греческий                 |
 | hu        | Венгерский                |
 | nl        | Нидерландский             |
@@ -99,8 +99,10 @@ npm start
 | ro        | Румынский                 |
 | cs        | Чешский                   |
 | da        | Датский                   |
+| pt        | Португальский ([#1](https://github.com/Lifailon/multranslate/issues/1))        |
+| vi        | Вьетнамский ([#2](https://github.com/Lifailon/multranslate/issues/2))          |
 
-Если кого-то языка нет в списке или у вас возникли проблемы с переводом, откройте запрос в разделе [Issues](https://github.com/Lifailon/multranslate/issues).
+Производится анализ всех переданных букв для их сравнения между английским алфавитом и указанным языком в параметре `--language`.
 
 Вы также можете использовать любой из переводчиков по отдельности, указав соответствующий параметр при запуске:
 
@@ -112,7 +114,7 @@ npm start
         </td>
     </tr>
     <tr>
-        <td><img src=/image/google-fr.jpg width=600/></td>
+        <td><img src=/image/google-tr.jpg width=600/></td>
         <td><img src=/image/deepl-de.jpg width=600/></td>
     </tr>
     <tr>
@@ -127,38 +129,46 @@ npm start
     </tr>
 </table>
 
-## ⌨ Горячие клавиши
+## Горячие клавиши
 
-- `Enter`: используется каждый раз для перевода текста одновременно с переносом на новую строку.
+- `F2` - переключение между всеми переводчиками и OpenAI.
+- `Ctrl+<Enter/S>` - перевод текста без переноса на новую строку.
+- `Ctrl+V` - вставка текста из буфера обмена (определено на уровне кода).
+- `Alt+C` - скопировать текст из поля ввода в буфер обмена.
+- `Alt+<1/2/3/4/5>` - копирования результатов перевода из окна вывода в буфер обмена (для каждого переводчика комбинация клавиш указана в скобках), при этом выбранная форма изменит свой цвет на зеленый.
+- `Ctrl+<N/Z>` - перейти к предыдущей записи истории переводов.
+- `Ctrl+<P/X>` - перейти к следующей записи в истории переводов.
+- `Shift+<Up/Down>` - одновременный скроллинг всех панелей вывода.
+- `Ctrl+<Up/Down>` - скроллинг панели ввода текста без изменения положения курсора.
+- `Ctrl+<Left/Right>` - быстрая навигация курсора через словосочетания.
+- `Ctrl+<A/E>` - переместить курсор в начало или конец ввода текста.
+- `Ctrl+<C/U/L>` - очистить поле ввода текста.
+- `Ctrl+W/Alt+Back` - удалить словосочетание перед курсором.
+- `Del/Ctrl+K` - удалить одну букву или символ после курсора.
+- `Escape` - выход из программы.
 
-- `Ctrl+<Q/W/E/R>`: копирования результатов перевода из форм вывода в буфер обмена (для каждого переводчика комбинация клавиш указана в скобках), при этом выбранная форма изменит свой цвет на зеленый.
-
-- `Ctrl+V`: вставка текста из буфера обмена (определено на уровне кода).
-
-- `Ctrl+Z`: Навигация по истории запросов на переводы с конца.
-
-- `Ctrl+X`: Навигация по истории переводов в обратном порядке.
-
-- `Shift+<⬆/⬇>`: одновременный скроллинг всех панелей вывода.
-
-- `Ctrl+<⬆/⬇>`: скроллинг панели ввода текста без навигации.
-
-- `Ctrl+<⬅/➡>`: быстрая навигация курсора через словосочетания.
-
-- `Ctrl+<A/D>`: перевести курсор к началу или концу ввода текста.
-
-- `Ctrl+Del`: удалить словосочетание перед курсором.
-
-- `Ctrl+C`: очистить поле ввода текста.
-
-- `Escape`: выход из программы.
-
-Что бы получить справку по горячим клавишам, используйте комбинацию клавиш: `Ctrl+S`
+Используйте клавишу `F1`, для получения справки по доступным сочетаниям клавиш:
 
 ![interface](/image/hotkeys.jpg)
 
-## 💡 Текстовый буфер
+## Вклад и участники
 
-Библиотека Blessed является устаревшей (более не поддерживается) и имеет ряд технических ограничений, например, отсутствует возможность навигации курсора в поле ввода текста. По этой причине был реализован механизм управления содержимым ввода через текстовый буфер, который позволяет использовать кастомный курсор для навигации с помощью стрелочек клавиатуры и автоматический скроллинг для пролистывания.
+Если ваш язык отсутствует в списке или у вас возникли проблемы с переводом, откройте запрос в разделе [Issues](https://github.com/Lifailon/multranslate/issues).
 
-Если вы планируете использовать данную библиотеку для схожих задач где требуется ввод текста, то добавьте в свой код `class TextBuffer` и управление корячими клавишами `keypress` через `inputBox.on()`.
+Вы также можете предложить другой источник для перевода текста через `API`, который не требует ключа доступа.
+
+Если вам нравится использовать данный интерфейс, вы можете сделать вклад, просто переведите этот README файл на свой родной язык и передайте его через [Pull Request](https://github.com/Lifailon/multranslate/pulls).
+
+## Задачи
+
+- Переписать код на TypeScript.
+- Реализовать поддержку нативного курсора (наработки в [multranslate-native-cursor](multranslate-native-cursor.js)).
+- Добавить проверку текста на стиль и грамматику (орфографии) через [LanguageTool](https://languagetool.org/http-api).
+
+## Текстовый буфер
+
+Библиотека Blessed прекрасна и не имеет аналогов по своему функционалу для `JavaScript` или `TypeScript` (и даже превосходит некоторые библиотеки в других языках), но является устаревшей (не поддерживается с 2015 года) и имеет ряд технических ограничений, например, отсутствует возможность навигации курсора в поле ввода текста. По этой причине был реализован механизм управления содержимым ввода через текстовый буфер, который позволяет использовать пользовательский курсор для навигации с помощью стрелочек клавиатуры и автоматическое пролистывание.
+
+Если вы планируете использовать данную библиотеку для схожих задач где требуется ввод текста, то добавьте в свой код `class TextBuffer` и управление корячими клавишами (`keypress`) через `inputBox.on()`. Мне понадобилось несколько недель, что бы добиться полноценной возможности работы с текстом, ключевая проблема, это встренный перенос строки (`autowrap`) и сдвиг пользовательского курсора.
+
+На протяжение ежедневного использования в течении 6 месяцев могу подтвердить, что это работает стабильно. 
