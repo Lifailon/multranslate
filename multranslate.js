@@ -7,13 +7,13 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { readFileSync } from 'fs'
-import { writeFileSync } from 'fs';
+import { writeFileSync } from 'fs'
 import { Command } from 'commander'
 
 // Определяем текущий путь для доступа к файлу БД, ключу OpenAI и конфигурации package
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const apiKeyPath = path.join(__dirname, 'openai-key.txt');
+const apiKeyPath = path.join(__dirname, 'openai-key.txt')
 
 // Читаем файл конфигурации для получения описания и версии приложения
 const pkg = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8'))
@@ -82,6 +82,9 @@ const translators = [
     'OpenAI'
 ]
 let selectedTranslator = 'all'
+
+// Режим ответов OpenAI (перевод или чат)
+let selectedModeOpenAI = "translate"
 
 // Обработка аргументов
 const program = new Command()
@@ -275,7 +278,7 @@ const outputBox4 = blessed.textarea({
 
 // Панель для отображения перевода из OpenAI (#4)
 const outputBox5 = blessed.textarea({
-    label: `OpenAI (Alt+5 or Alt+X)`,
+    label: `OpenAI Translator (Alt+5 or Alt+X)`,
     top: '60%',
     left: '50.5%',
     width: '50%',
@@ -339,7 +342,6 @@ const hotkeysBox = blessed.box({
 hotkeysBox.setContent(`
   Hotkeys:
 
-    {green-fg}F2{/green-fg}:                 Switch between all translators and OpenAI
     {green-fg}Ctrl+<Enter/S>{/green-fg}:     Translation of text without breaking to a new line
     {cyan-fg}Ctrl+V{/cyan-fg}:             Pasting text from the clipboard
     {cyan-fg}Alt+C{/cyan-fg}:              Copy text from the input field to clipboard
@@ -353,6 +355,8 @@ hotkeysBox.setContent(`
     {blue-fg}Ctrl+<C/U/L>{/blue-fg}:       Clear text input field
     {blue-fg}Ctrl+W/Alt+Back{/blue-fg}:    Delete the word before the cursor
     {blue-fg}Del/Ctrl+K{/blue-fg}:         Deletes one letter or character after the cursor
+    {magenta-fg}F2{/magenta-fg}:                 Switch to OpenAI with a preset translation prompt
+    {magenta-fg}F3{/magenta-fg}:                 Switch to OpenAI chat
     {red-fg}Escape{/red-fg}:             Exit the program
 
   * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Meta{/cyan-fg}/{cyan-fg}Option{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg}/{cyan-fg}Cmd{/cyan-fg} (⌘)
@@ -479,7 +483,19 @@ screen.key(['f1'], function() {
 
 // Смена окна переводчика между all и OpenAI 
 screen.key(['f2'], function() {
-    if (outputBox5.hidden === true) {
+    if (outputBox5.hidden === true || selectedModeOpenAI === "chat") {
+        selectedModeOpenAI = "translate"
+        outputBox5.setLabel('OpenAI Translator (Alt+5 or Alt+X)')
+        selectWindow('OpenAI')
+    } else {
+        selectWindow('all')
+    }
+})
+
+screen.key(['f3'], function() {
+    if (outputBox5.hidden === true || selectedModeOpenAI === "translate") {
+        selectedModeOpenAI = "chat"
+        outputBox5.setLabel('OpenAI Chat (Alt+5 or Alt+X)')
         selectWindow('OpenAI')
     } else {
         selectWindow('all')
@@ -1342,10 +1358,17 @@ async function translateMyMemory(text) {
 // Функция перевода через OpenAI official API (#4)
 // API Docs: https://platform.openai.com/docs/api-reference/introduction
 async function translateOpenAI(text) {
-    const fromLang = detectFromLanguage(text)
-    const toLangCode = detectToLanguage(fromLang)
-    const toLang = mapLanguages[toLangCode]
     const apiUrl = 'https://api.openai.com/v1/chat/completions'
+    let prompt
+    if (selectedModeOpenAI == "translate") {
+        const fromLang = detectFromLanguage(text)
+        const toLangCode = detectToLanguage(fromLang)
+        const toLang = mapLanguages[toLangCode]
+        prompt = `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or commentsTranslate the following text into ${toLang}:\n"${text}"\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+    }
+    else if (selectedModeOpenAI == "chat") {
+        prompt = text
+    }
     try {
         const response = await axios.post(
             apiUrl,
@@ -1354,8 +1377,7 @@ async function translateOpenAI(text) {
                 messages: [
                     {
                         role: 'user',
-                        // Prompt for LLM
-                        content: `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or commentsTranslate the following text into ${toLang}:\n"${text}"\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+                        content: prompt
                     }
                 ],
                 temperature: 0.7
@@ -1367,7 +1389,7 @@ async function translateOpenAI(text) {
                 },
             }
         )
-        // Удаляем кавычки в ответе для AI
+        // Удаляем кавычки из ответа AI
         return response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '')
     } catch (error) {
         // Ошибка ответа
