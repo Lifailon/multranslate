@@ -79,16 +79,13 @@ const translators = [
     'DeepL',
     'Reverso',
     'MyMemory',
-    'OpenAI',
-    'Ollama'
+    'OpenAI'
 ]
 // Translator default
 let selectedTranslator = 'all'
 
 // Режим ответов OpenAI (перевод или чат)
 let selectedModeOpenAI = "translate"
-// Режим ответов Ollama
-let selectedModeOllama = "translate"
 
 // Обработка аргументов
 const program = new Command()
@@ -97,27 +94,32 @@ program
     .version(pkg.version)
     .option(
         '-l, --language <name>',
-        `select language: ${languages.join(', ')}`,
+        `Select the language: ${languages.join(', ')}`,
         'ru'
     )
     .option(
         '-t, --translator <name>',
-        `select translator: ${translators.join(', ')}`,
+        `Select the translator: ${translators.join(', ')}`,
         'all'
     )
     .option(
         '-k, --key <value>',
-        'API key for using the OpenAI translator (will be saved for future use)'
+        'API key for OpenAI (will be saved for future use)'
     )
     .option(
-        '-s, --server <address:port>',
-        'Ollama server address and port',
-        '127.0.0.1:11434'
+        '-s, --server <address>',
+        'Server address for OpenAI API or local LLM',
+        'https://api.openai.com'
     )
     .option(
         '-m, --model <name>',
-        'model for Ollama',
-        'mistral'
+        'Select the LLM model',
+        'gpt-4o-mini'
+    )
+    .option(
+        '-e, --temp <number>',
+        'Select the temperature for LLM',
+        0.7
     )
     .parse(process.argv)
 
@@ -379,9 +381,8 @@ hotkeysBox.setContent(`
     {blue-fg}Ctrl+<C/U/L>{/blue-fg}:       Clear text input field
     {blue-fg}Ctrl+W/Alt+Back{/blue-fg}:    Delete the word before the cursor
     {blue-fg}Del/Ctrl+K{/blue-fg}:         Deletes one letter or character after the cursor
-    {magenta-fg}F2{/magenta-fg}:                 Switch to OpenAI with a preset translation prompt or in chat mode
-    {magenta-fg}F3{/magenta-fg}:                 Switch to Ollama for translation offline
-    {magenta-fg}F4{/magenta-fg}:                 Switch to all translators
+    {magenta-fg}F2{/magenta-fg}:                 Switch to OpenAI with a preset translation prompt
+    {magenta-fg}F3{/magenta-fg}:                 Switch to OpenAI in chat mode
     {red-fg}Escape{/red-fg}:             Exit the program
 
   * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Meta{/cyan-fg}/{cyan-fg}Option{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg}/{cyan-fg}Cmd{/cyan-fg} (⌘)
@@ -437,9 +438,7 @@ function selectWindow(selectedTranslatorHidden) {
         outputBox4.hidden = false
         outputBox5.hidden = true
     }
-    else if (selectedTranslatorHidden === "OpenAI" || selectedTranslatorHidden === "Ollama") {
-        // Изменяем источник для перевода
-        selectedTranslator = selectedTranslatorHidden
+    else if (selectedTranslatorHidden === "OpenAI") {
         // Иключить перезатирание панели
         outputBox1.height = '0%'
         outputBox2.height = '0%'
@@ -487,7 +486,7 @@ function selectWindow(selectedTranslatorHidden) {
 }
 
 selectWindow(selectedTranslator)
-outputBox5.setLabel(`${selectedTranslator} Translator (Alt+5 or Alt+X)`)
+outputBox5.setLabel(`OpenAI Translator (Alt+5 or Alt+X)`)
 
 // Добавление панелей на экран
 screen.append(inputBox)
@@ -508,37 +507,30 @@ screen.key(['f1'], function() {
     }
 })
 
-// F2: OpenAI Translator (#4) and chat mode
+// F2: OpenAI Translator (#4)
 screen.key(['f2'], function() {
-    if (selectedModeOpenAI === "chat") {
+    if (outputBox5.hidden === true || selectedModeOpenAI === "chat") {
         selectedModeOpenAI = "translate"
         outputBox5.setLabel('OpenAI Translator (Alt+5 or Alt+X)')
-        selectWindow('OpenAI')
+        selectedTranslator = "OpenAI"
+        selectWindow(selectedTranslator)
+    } else {
+        selectedTranslator = "all"
+        selectWindow(selectedTranslator)
     }
-    else if (selectedModeOpenAI === "translate") {
+})
+
+// F3: OpenAI Chat
+screen.key(['f3'], function() {
+    if (outputBox5.hidden === true || selectedModeOpenAI === "translate") {
         selectedModeOpenAI = "chat"
         outputBox5.setLabel('OpenAI Chat (Alt+5 or Alt+X)')
-        selectWindow('OpenAI')
+        selectedTranslator = "OpenAI"
+        selectWindow(selectedTranslator)
+    } else {
+        selectedTranslator = "all"
+        selectWindow(selectedTranslator)
     }
-})
-
-// F3: Ollama (0.6.1)
-screen.key(['f3'], function() {
-    if (selectedModeOllama === "chat") {
-        selectedModeOllama = "translate"
-        outputBox5.setLabel('Ollama Translator (Alt+5 or Alt+X)')
-        selectWindow('Ollama')
-    }
-    else if (selectedModeOllama === "translate") {
-        selectedModeOllama = "chat"
-        outputBox5.setLabel('Ollama Chat (Alt+5 or Alt+X)')
-        selectWindow('Ollama')
-    }
-})
-
-// F4: All
-screen.key(['f4'], function() {
-    selectWindow('all')
 })
 
 // ------------------------------- Auto-detect Language ---------------------------------
@@ -1394,12 +1386,13 @@ async function translateMyMemory(text) {
     }
 }
 
-// Функция формирующая текст для перевода в LLM
+// Функция формирующая system prompt для перевода в LLM
 function getPrompt(text) {
     const fromLang = detectFromLanguage(text)
     const toLangCode = detectToLanguage(fromLang)
     const toLang = mapLanguages[toLangCode]
-    return `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+    // return `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+    return `You are a translator. Translate the text to ${toLang} language. Respond ONLY the contents of the translated text. Do not include other explanations, context or comments in response.`
 }
 
 // Функция для отображения статуса загрузки
@@ -1422,14 +1415,14 @@ function loader(action) {
 
 // Функция перевода через OpenAI official API (#4)
 // API Docs: https://platform.openai.com/docs/api-reference/introduction
+// + LM-Studio: https://lmstudio.ai (0.6.1)
+// npm start -- -s "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
+// npm start -- -s "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
 async function translateOpenAI(text) {
-    const apiUrl = 'https://api.openai.com/v1/chat/completions'
-    let prompt
+    const apiUrl = `${program.opts().server}/v1/chat/completions`
+    let prompt = ""
     if (selectedModeOpenAI == "translate") {
         prompt = getPrompt(text)
-    }
-    else if (selectedModeOpenAI == "chat") {
-        prompt = text
     }
     // Запускаем интерфейс загрузки
     loader(true)
@@ -1437,14 +1430,21 @@ async function translateOpenAI(text) {
         const response = await axios.post(
             apiUrl,
             {
-                model: 'gpt-4o-mini',
+                model: program.opts().model,
                 messages: [
                     {
-                        role: 'user',
+                        role: 'system',
                         content: prompt
+                    },
+                    {
+                        role: 'user',
+                        content: text
                     }
                 ],
-                temperature: 0.7
+                // Температура ответов (от 0.0 до 2.0)
+                temperature: program.opts().temp,
+                // Отключить потоковую передачу ответа
+                stream: false
             },
             {
                 headers: {
@@ -1453,8 +1453,11 @@ async function translateOpenAI(text) {
                 }
             }
         )
-        // Удаляем кавычки из ответа AI
-        return response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '').trim()
+        // Удаляем кавычки из ответа
+        let data = response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '').trim()
+        // Удаляем блок из тегов <think></think> для LM Studio
+        data = data.includes('</think>') ? data.split('</think>')[1].trim() : data
+        return data
     } catch (error) {
         // Ошибка ответа
         if (error.response) {
@@ -1468,8 +1471,7 @@ async function translateOpenAI(text) {
     }
 }
 
-// Ollama (0.6.1)
-// https://github.com/ollama/ollama
+// Ollama: https://github.com/ollama/ollama
 async function translateOllama(text) {
     const apiUrl = `http://${program.opts().server}/api/generate`
     let prompt
@@ -1559,15 +1561,15 @@ async function handleTranslation() {
             outputBox5.setContent(translatedText)
             writeHistory(textToTranslate,null,null,null,null,translatedText)
         }
-        else if (selectedTranslator === "Ollama") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateOllama(textToTranslate)
-            ])
-            outputBox5.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,null,null,translatedText)
-        }
+        // else if (selectedTranslator === "Ollama") {
+        //     const [
+        //         translatedText,
+        //     ] = await Promise.all([
+        //         translateOllama(textToTranslate)
+        //     ])
+        //     outputBox5.setContent(translatedText)
+        //     writeHistory(textToTranslate,null,null,null,null,translatedText)
+        // }
         else if (selectedTranslator === "all") {
             const [
                 translatedText1,
