@@ -79,21 +79,46 @@ const translators = [
     'DeepL',
     'Reverso',
     'MyMemory',
-    'OpenAI'
+    'OpenAI',
+    'Ollama'
 ]
+// Translator default
 let selectedTranslator = 'all'
 
 // Режим ответов OpenAI (перевод или чат)
 let selectedModeOpenAI = "translate"
+// Режим ответов Ollama
+let selectedModeOllama = "translate"
 
 // Обработка аргументов
 const program = new Command()
 program
     .description(pkg.description)
     .version(pkg.version)
-    .option('-l, --language <name>', `select language: ${languages.join(', ')}`, 'ru')
-    .option('-t, --translator <name>', `select translator: ${translators.join(', ')}`, 'all')
-    .option('-k, --key <value>', 'API key for using the OpenAI translator (will be saved for future use)')
+    .option(
+        '-l, --language <name>',
+        `select language: ${languages.join(', ')}`,
+        'ru'
+    )
+    .option(
+        '-t, --translator <name>',
+        `select translator: ${translators.join(', ')}`,
+        'all'
+    )
+    .option(
+        '-k, --key <value>',
+        'API key for using the OpenAI translator (will be saved for future use)'
+    )
+    .option(
+        '-s, --server <address:port>',
+        'Ollama server address and port',
+        '127.0.0.1:11434'
+    )
+    .option(
+        '-m, --model <name>',
+        'model for Ollama',
+        'mistral'
+    )
     .parse(process.argv)
 
 // Language
@@ -278,7 +303,6 @@ const outputBox4 = blessed.textarea({
 
 // Панель для отображения перевода из OpenAI (#4)
 const outputBox5 = blessed.textarea({
-    label: `OpenAI Translator (Alt+5 or Alt+X)`,
     top: '60%',
     left: '50.5%',
     width: '50%',
@@ -355,8 +379,9 @@ hotkeysBox.setContent(`
     {blue-fg}Ctrl+<C/U/L>{/blue-fg}:       Clear text input field
     {blue-fg}Ctrl+W/Alt+Back{/blue-fg}:    Delete the word before the cursor
     {blue-fg}Del/Ctrl+K{/blue-fg}:         Deletes one letter or character after the cursor
-    {magenta-fg}F2{/magenta-fg}:                 Switch to OpenAI with a preset translation prompt
-    {magenta-fg}F3{/magenta-fg}:                 Switch to OpenAI chat
+    {magenta-fg}F2{/magenta-fg}:                 Switch to OpenAI with a preset translation prompt or in chat mode
+    {magenta-fg}F3{/magenta-fg}:                 Switch to Ollama for translation offline
+    {magenta-fg}F4{/magenta-fg}:                 Switch to all translators
     {red-fg}Escape{/red-fg}:             Exit the program
 
   * {cyan-fg}Alt{/cyan-fg} = {cyan-fg}Meta{/cyan-fg}/{cyan-fg}Option{/cyan-fg} & {cyan-fg}Ctrl{/cyan-fg} = {cyan-fg}Command{/cyan-fg}/{cyan-fg}Cmd{/cyan-fg} (⌘)
@@ -412,8 +437,9 @@ function selectWindow(selectedTranslatorHidden) {
         outputBox4.hidden = false
         outputBox5.hidden = true
     }
-    else if (selectedTranslatorHidden === "OpenAI") {
-        selectedTranslator = 'OpenAI'
+    else if (selectedTranslatorHidden === "OpenAI" || selectedTranslatorHidden === "Ollama") {
+        // Изменяем источник для перевода
+        selectedTranslator = selectedTranslatorHidden
         // Иключить перезатирание панели
         outputBox1.height = '0%'
         outputBox2.height = '0%'
@@ -461,6 +487,7 @@ function selectWindow(selectedTranslatorHidden) {
 }
 
 selectWindow(selectedTranslator)
+outputBox5.setLabel(`${selectedTranslator} Translator (Alt+5 or Alt+X)`)
 
 // Добавление панелей на экран
 screen.append(inputBox)
@@ -481,25 +508,37 @@ screen.key(['f1'], function() {
     }
 })
 
-// Смена окна переводчика между all и OpenAI 
+// F2: OpenAI Translator (#4) and chat mode
 screen.key(['f2'], function() {
-    if (outputBox5.hidden === true || selectedModeOpenAI === "chat") {
+    if (selectedModeOpenAI === "chat") {
         selectedModeOpenAI = "translate"
         outputBox5.setLabel('OpenAI Translator (Alt+5 or Alt+X)')
         selectWindow('OpenAI')
-    } else {
-        selectWindow('all')
     }
-})
-
-screen.key(['f3'], function() {
-    if (outputBox5.hidden === true || selectedModeOpenAI === "translate") {
+    else if (selectedModeOpenAI === "translate") {
         selectedModeOpenAI = "chat"
         outputBox5.setLabel('OpenAI Chat (Alt+5 or Alt+X)')
         selectWindow('OpenAI')
-    } else {
-        selectWindow('all')
     }
+})
+
+// F3: Ollama (0.6.1)
+screen.key(['f3'], function() {
+    if (selectedModeOllama === "chat") {
+        selectedModeOllama = "translate"
+        outputBox5.setLabel('Ollama Translator (Alt+5 or Alt+X)')
+        selectWindow('Ollama')
+    }
+    else if (selectedModeOllama === "translate") {
+        selectedModeOllama = "chat"
+        outputBox5.setLabel('Ollama Chat (Alt+5 or Alt+X)')
+        selectWindow('Ollama')
+    }
+})
+
+// F4: All
+screen.key(['f4'], function() {
+    selectWindow('all')
 })
 
 // ------------------------------- Auto-detect Language ---------------------------------
@@ -1355,20 +1394,45 @@ async function translateMyMemory(text) {
     }
 }
 
+// Функция формирующая текст для перевода в LLM
+function getPrompt(text) {
+    const fromLang = detectFromLanguage(text)
+    const toLangCode = detectToLanguage(fromLang)
+    const toLang = mapLanguages[toLangCode]
+    return `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+}
+
+// Функция для отображения статуса загрузки
+function loader(action) {
+    const loadingStates = ['','.', '..', '...'] 
+    let currentIndex = 0
+    if (action) {
+        global.loadingInterval = setInterval(() => {
+            infoBox.content = `Loading${loadingStates[currentIndex]}`
+            screen.render()
+            currentIndex = (currentIndex + 1) % loadingStates.length
+        },
+        600
+    )
+    }
+    else if (!action) {
+        clearInterval(global.loadingInterval)
+    }
+}
+
 // Функция перевода через OpenAI official API (#4)
 // API Docs: https://platform.openai.com/docs/api-reference/introduction
 async function translateOpenAI(text) {
     const apiUrl = 'https://api.openai.com/v1/chat/completions'
     let prompt
     if (selectedModeOpenAI == "translate") {
-        const fromLang = detectFromLanguage(text)
-        const toLangCode = detectToLanguage(fromLang)
-        const toLang = mapLanguages[toLangCode]
-        prompt = `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or commentsTranslate the following text into ${toLang}:\n"${text}"\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
+        prompt = getPrompt(text)
     }
     else if (selectedModeOpenAI == "chat") {
         prompt = text
     }
+    // Запускаем интерфейс загрузки
+    loader(true)
     try {
         const response = await axios.post(
             apiUrl,
@@ -1386,11 +1450,11 @@ async function translateOpenAI(text) {
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${apiKey}`,
-                },
+                }
             }
         )
         // Удаляем кавычки из ответа AI
-        return response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '')
+        return response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '').trim()
     } catch (error) {
         // Ошибка ответа
         if (error.response) {
@@ -1398,6 +1462,49 @@ async function translateOpenAI(text) {
         }
         // Ошибка запроса
         return `\x1b[31mError\x1b[0m: ${error.message}`
+    } finally {
+        // Останавливаем загрузку
+        loader(false)
+    }
+}
+
+// Ollama (0.6.1)
+// https://github.com/ollama/ollama
+async function translateOllama(text) {
+    const apiUrl = `http://${program.opts().server}/api/generate`
+    let prompt
+    if (selectedModeOllama == "translate") {
+        prompt = getPrompt(text)
+    }
+    else if (selectedModeOllama == "chat") {
+        prompt = text
+    }
+    loader(true)
+    try {
+        const response = await axios.post(
+            apiUrl,
+            {
+                model: program.opts().model,
+                prompt: prompt
+            },
+            {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                responseType: 'stream'
+            }
+        )
+        // Читаем поток данных (stream) и собираем ответ
+        let fullResponse = ''
+        for await (const chunk of response.data) {
+            const parsedChunk = JSON.parse(chunk.toString())
+            fullResponse += parsedChunk.response || ''
+        }        
+        return fullResponse.trim()
+    } catch (error) {
+        return `\x1b[31mError\x1b[0m: ${error.message}`
+    } finally {
+        loader(false)
     }
 }
 
@@ -1448,6 +1555,15 @@ async function handleTranslation() {
                 translatedText,
             ] = await Promise.all([
                 translateOpenAI(textToTranslate)
+            ])
+            outputBox5.setContent(translatedText)
+            writeHistory(textToTranslate,null,null,null,null,translatedText)
+        }
+        else if (selectedTranslator === "Ollama") {
+            const [
+                translatedText,
+            ] = await Promise.all([
+                translateOllama(textToTranslate)
             ])
             outputBox5.setContent(translatedText)
             writeHistory(textToTranslate,null,null,null,null,translatedText)
