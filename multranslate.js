@@ -1391,8 +1391,7 @@ function getPrompt(text) {
     const fromLang = detectFromLanguage(text)
     const toLangCode = detectToLanguage(fromLang)
     const toLang = mapLanguages[toLangCode]
-    // return `Translate the following text into ${toLang}:\n${text}\nRespond ONLY with the translated text. Do not include any other explanations, context, or comments.`
-    return `You are a translator. Translate the text to ${toLang} language. Respond ONLY the contents of the translated text. Do not include other explanations, context or comments in response.`
+    return `You are a translator. Do not analyze the questions and do not give the answers to them! Translate the text to ${toLang} language. Respond ONLY the contents of the translated text. Do not include other explanations, context or comments in response.`
 }
 
 // Функция для отображения статуса загрузки
@@ -1401,11 +1400,11 @@ function loader(action) {
     let currentIndex = 0
     if (action) {
         global.loadingInterval = setInterval(() => {
-            infoBox.content = `Loading${loadingStates[currentIndex]}`
+            infoBox.content = `${infoContent} Loading${loadingStates[currentIndex]}`
             screen.render()
             currentIndex = (currentIndex + 1) % loadingStates.length
         },
-        600
+        500
     )
     }
     else if (!action) {
@@ -1413,9 +1412,38 @@ function loader(action) {
     }
 }
 
+// Заглушка (mock) для проверки однопоточных ответов OpenAI
+// https://github.com/nock/nock
+// npm install nock
+// import nock from 'nock'
+// nock('https://api.openai.com')
+//     .persist() // отключить удаление из списка перехватчиков
+//     .post('/v1/chat/completions')
+//     .reply(200,
+//         (uri, requestBody) => {
+//             const userMessage = requestBody.messages?.[1]?.content // извлекаем содержимое из тела запроса
+//             return {
+//                 choices: [
+//                     {
+//                         message: {
+//                             role: 'assistant',
+//                             content: `Response from Nock:\n${userMessage}`,
+//                         }
+//                     }
+//                 ]
+//             }
+//         }
+//     )
+
+// https://github.com/typicode/json-server
+// npm install -g json-server@0.17.4
+// cd mock
+// json-server --watch openai.json --routes routes.json
+
 // Функция перевода через OpenAI official API (#4)
-// API Docs: https://platform.openai.com/docs/api-reference/introduction
-// + LM-Studio: https://lmstudio.ai (0.6.1)
+// OpenAI API Docs: https://platform.openai.com/docs/api-reference/introduction
+// LM Studio: https://lmstudio.ai (0.6.1)
+// LM Studio API Docs (OpenAI Compatibility): https://lmstudio.ai/docs/api/endpoints/openai
 // npm start -- -s "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
 // npm start -- -s "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
 async function translateOpenAI(text) {
@@ -1424,9 +1452,8 @@ async function translateOpenAI(text) {
     if (selectedModeOpenAI == "translate") {
         prompt = getPrompt(text)
     }
-    // Запускаем интерфейс загрузки
-    loader(true)
     try {
+        // Debug: использовать метод get для заглушки через json-server
         const response = await axios.post(
             apiUrl,
             {
@@ -1443,31 +1470,74 @@ async function translateOpenAI(text) {
                 ],
                 // Температура ответов (от 0.0 до 2.0)
                 temperature: program.opts().temp,
-                // Отключить потоковую передачу ответа
-                stream: false
+                // Включаем потоковую передачу ответа (Debug: отключить для заглушки)
+                stream: true
             },
             {
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${apiKey}`,
-                }
+                },
+                // Debug: отключить для заглушки
+                responseType: 'stream'
             }
         )
-        // Удаляем кавычки из ответа
-        let data = response.data.choices[0]?.message?.content?.replace(/^"|"$/g, '').trim()
-        // Удаляем блок из тегов <think></think> для LM Studio
-        data = data.includes('</think>') ? data.split('</think>')[1].trim() : data
-        return data
-    } catch (error) {
-        // Ошибка ответа
-        if (error.response) {
-            return `\x1b[31mError response\x1b[0m: ${error.response.data.error.message}\nResponse status: ${error.response.status}`
+        // return response.data.choices[0]?.message?.content
+        // Собираем ответ из потока
+        let fullResponse = ''
+        try {
+            for await (const data of response.data) {
+                // Разбиваем на массив строк (с проверкой закрывающий скобки)
+                const dataArray = data.toString().split(/(?<=\})\n\n/)
+                // Проходим по каждому элементу массива
+                for (const d of dataArray) {
+                    // Парсим строки
+                    const parsedData = d.replace(/^data:\s*/, '').trim()
+                    if (parsedData) {
+                        try {
+                            // Парсим JSON
+                            const parsedJson = JSON.parse(parsedData)
+                            const content = parsedJson?.choices[0]?.delta?.content || ''
+                            fullResponse += content
+                            // Выводим ответ по частям
+                            outputBox5.setContent(fullResponse)
+                            screen.render()
+            
+                        } catch (error) {
+                            // Игнорируем ошибки парсинга JSON и [DONE] в конце ответа
+                        }
+                    }
+                }
+            }
         }
-        // Ошибка запроса
+        finally {
+            return fullResponse.trim()
+        }
+    }
+    catch (error) {
+        // Ошибка при ответе запроса
+        if (error.response) {
+            let errorData = ''
+            try {
+                // Обрабатываем поток данных с ошибкой
+                errorData = await new Promise((resolve, reject) => {
+                    let data = ''
+                    error.response.data.on('data', (chunk) => {
+                        data += chunk
+                    })
+                    error.response.data.on('end', () => resolve(data))
+                    error.response.data.on('error', (err) => reject(err))
+                })
+                const parsedError = JSON.parse(errorData)
+                const errorMessage = parsedError.error?.message || 'Unknown error'
+                return `\x1b[31mError response\x1b[0m: ${errorMessage}\nResponse status: ${error.response.status}`
+            } catch (parsingError) {
+                // Ошибка при парсинге ошибки json
+                return `\x1b[31mError response\x1b[0m: ${errorData}\nResponse status: ${error.response.status}`
+            }
+        }
+        // Ошибка запроса или его обработки
         return `\x1b[31mError\x1b[0m: ${error.message}`
-    } finally {
-        // Останавливаем загрузку
-        loader(false)
     }
 }
 
@@ -1481,7 +1551,6 @@ async function translateOllama(text) {
     else if (selectedModeOllama == "chat") {
         prompt = text
     }
-    loader(true)
     try {
         const response = await axios.post(
             apiUrl,
@@ -1505,8 +1574,6 @@ async function translateOllama(text) {
         return fullResponse.trim()
     } catch (error) {
         return `\x1b[31mError\x1b[0m: ${error.message}`
-    } finally {
-        loader(false)
     }
 }
 
@@ -1514,102 +1581,109 @@ async function translateOllama(text) {
 async function handleTranslation() {
     // Заменяем символ возврата каретки на перенос строки без экранирования
     const textToTranslate = buffer.getText().trim().replace(/\r/g, '\n')
-    if (textToTranslate.length > 1) {
-        // Вызываем асинхронные запросы к API на перевод
-        if (selectedTranslator === "Google") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateGoogle(textToTranslate)
-            ])
-            outputBox1.setContent(translatedText)
-            writeHistory(textToTranslate,translatedText,null,null,null)
+    try {
+        if (textToTranslate.length > 1) {
+            // Запускаем интерфейс загрузки
+            loader(true)
+            // Вызываем асинхронные запросы к API на перевод
+            if (selectedTranslator === "Google") {
+                const [
+                    translatedText,
+                ] = await Promise.all([
+                    translateGoogle(textToTranslate)
+                ])
+                outputBox1.setContent(translatedText)
+                writeHistory(textToTranslate,translatedText,null,null,null)
+            }
+            else if (selectedTranslator === "DeepL") {
+                const [
+                    translatedText,
+                ] = await Promise.all([
+                    translateDeepLX(textToTranslate)
+                ])
+                outputBox2.setContent(translatedText)
+                writeHistory(textToTranslate,null,translatedText,null,null,null)
+            }
+            else if (selectedTranslator === "Reverso") {
+                const [
+                    translatedText,
+                ] = await Promise.all([
+                    translateReversoFetch(textToTranslate)
+                ])
+                outputBox3.setContent(translatedText)
+                writeHistory(textToTranslate,null,null,translatedText,null,null)
+            }
+            else if (selectedTranslator === "MyMemory") {
+                const [
+                    translatedText,
+                ] = await Promise.all([
+                    translateMyMemory(textToTranslate)
+                ])
+                outputBox4.setContent(translatedText)
+                writeHistory(textToTranslate,null,null,null,translatedText,null)
+            }
+            else if (selectedTranslator === "OpenAI") {
+                const [
+                    translatedText,
+                ] = await Promise.all([
+                    translateOpenAI(textToTranslate)
+                ])
+                outputBox5.setContent(translatedText)
+                writeHistory(textToTranslate,null,null,null,null,translatedText)
+            }
+            // else if (selectedTranslator === "Ollama") {
+            //     const [
+            //         translatedText,
+            //     ] = await Promise.all([
+            //         translateOllama(textToTranslate)
+            //     ])
+            //     outputBox5.setContent(translatedText)
+            //     writeHistory(textToTranslate,null,null,null,null,translatedText)
+            // }
+            else if (selectedTranslator === "all") {
+                const [
+                    translatedText1,
+                    translatedText2,
+                    translatedText3,
+                    translatedText4
+                ] = await Promise.all([
+                    translateGoogle(textToTranslate),
+                    translateDeepLX(textToTranslate),
+                    translateReversoFetch(textToTranslate),
+                    translateMyMemory(textToTranslate)
+                ])
+                outputBox1.setContent(translatedText1)
+                outputBox2.setContent(translatedText2)
+                outputBox3.setContent(translatedText3)
+                outputBox4.setContent(translatedText4)
+                // Записываем содержимое запросов перевода в базу данных
+                writeHistory(
+                    textToTranslate,
+                    translatedText1,
+                    translatedText2,
+                    translatedText3,
+                    translatedText4,
+                    null
+                )
+            }
+            // Определяем id и удаляем старые записи из БД
+            const allId = getAllId()
+            maxID = allId.length-1
+            curID = maxID
+            const lastText = readHistory(allId[allId.length-1])
+            if (curID >= clearHistory) {
+                deleteHistory(allId[0])
+                curID--
+                maxID--
+            }
+            // Обновляем статус в интерфейсе
+            infoBox.content = `${infoContent} History: \x1b[32m${curID+1}\x1b[37m/\x1b[32m${curID+1}\x1b[37m (${parseData(lastText.created_at)})`
+            screen.render()
+            inputBox.focus()
         }
-        else if (selectedTranslator === "DeepL") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateDeepLX(textToTranslate)
-            ])
-            outputBox2.setContent(translatedText)
-            writeHistory(textToTranslate,null,translatedText,null,null,null)
-        }
-        else if (selectedTranslator === "Reverso") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateReversoFetch(textToTranslate)
-            ])
-            outputBox3.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,translatedText,null,null)
-        }
-        else if (selectedTranslator === "MyMemory") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateMyMemory(textToTranslate)
-            ])
-            outputBox4.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,null,translatedText,null)
-        }
-        else if (selectedTranslator === "OpenAI") {
-            const [
-                translatedText,
-            ] = await Promise.all([
-                translateOpenAI(textToTranslate)
-            ])
-            outputBox5.setContent(translatedText)
-            writeHistory(textToTranslate,null,null,null,null,translatedText)
-        }
-        // else if (selectedTranslator === "Ollama") {
-        //     const [
-        //         translatedText,
-        //     ] = await Promise.all([
-        //         translateOllama(textToTranslate)
-        //     ])
-        //     outputBox5.setContent(translatedText)
-        //     writeHistory(textToTranslate,null,null,null,null,translatedText)
-        // }
-        else if (selectedTranslator === "all") {
-            const [
-                translatedText1,
-                translatedText2,
-                translatedText3,
-                translatedText4
-            ] = await Promise.all([
-                translateGoogle(textToTranslate),
-                translateDeepLX(textToTranslate),
-                translateReversoFetch(textToTranslate),
-                translateMyMemory(textToTranslate)
-            ])
-            outputBox1.setContent(translatedText1)
-            outputBox2.setContent(translatedText2)
-            outputBox3.setContent(translatedText3)
-            outputBox4.setContent(translatedText4)
-            // Записываем содержимое запросов перевода в базу данных
-            writeHistory(
-                textToTranslate,
-                translatedText1,
-                translatedText2,
-                translatedText3,
-                translatedText4,
-                null
-            )
-        }
-        // Определяем id и удаляем старые записи из БД
-        const allId = getAllId()
-        maxID = allId.length-1
-        curID = maxID
-        const lastText = readHistory(allId[allId.length-1])
-        if (curID >= clearHistory) {
-            deleteHistory(allId[0])
-            curID--
-            maxID--
-        }
-        // Обновляем статус в интерфейсе
-        infoBox.content = `${infoContent} History: \x1b[32m${curID+1}\x1b[37m/\x1b[32m${curID+1}\x1b[37m (${parseData(lastText.created_at)})`
-        screen.render()
-        inputBox.focus()
+    }
+    finally {
+        loader(false)
     }
 }
 
