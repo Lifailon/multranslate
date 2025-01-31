@@ -12,57 +12,67 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Google",
+            "name": "Llama",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "program": "${workspaceFolder}/multranslate.js",
             "args": [
-                "--translator",
-                "google"
+                "-s", "http://127.0.0.1:1234",
+                "-m", "llama-3-8b-gpt-4o-ru1.0"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "DeepL",
+            "name": "All Japan",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "program": "${workspaceFolder}/multranslate.js",
             "args": [
-                "--translator",
-                "deepl"
+                "--language", "ja"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "Reverso",
+            "name": "Google Turkish",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "program": "${workspaceFolder}/multranslate.js",
             "args": [
-                "--translator",
-                "reverso"
+                "--translator", "google",
+                "--language", "tr"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "MyMemory",
+            "name": "DeepL German",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "program": "${workspaceFolder}/multranslate.js",
             "args": [
-                "--translator",
-                "mymemory"
+                "--translator", "deepl",
+                "--language", "de"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "Japan",
+            "name": "Reverso Italian",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/multranslate-custom-cursor.js",
+            "program": "${workspaceFolder}/multranslate.js",
             "args": [
-                "--language",
-                "ja"
+                "--translator", "reverso",
+                "--language", "it"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "MyMemory Spanish",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/multranslate.js",
+            "args": [
+                "--translator", "mymemory",
+                "--language", "es"
             ],
             "console": "integratedTerminal"
         }
