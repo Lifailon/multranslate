@@ -12,24 +12,30 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-Cross-platform terminal user interface (TUI) based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources, as well as LLM via [OpenAI](https://openai.com). All sources do not require an access token (API key, with the *exception of OpenAI*) or other settings. Supports automatic source and target language definition at code level between English and any of the [supported languages](#-supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
+Cross-platform terminal user interface based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources and `LLM`. All sources do not require an API access token (with the exception of official OpenAI). Supports automatic source and target language definition at code level between English and any of the [supported languages](#supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
 
 ![interface](/image/interface.jpg)
 
 ## Translation providers
 
 - [Google](https://translate.google.com) - free and unlimited [API](https://github.com/vitalets/google-translate-api) using [serverless](https://github.com/olavoparno/translate-serverless-vercel) hosted on the Vercel platform. Available for translation more than 5000 characters.
-- [DeepL](https://www.deepl.com) - free API via [DeepLX](https://github.com/OwO-Network/DeepLX) using [serverless](https://github.com/LegendLeo/deeplx-serverless) hosted on [Vercel](https://github.com/bropines/Deeplx-vercel) platform. There are limits on the number of translation requests that can be made frequently, and there may also be a limit on the number of characters that can be used (the official limit is 5000 characters per request).
-- [Reverso](https://www.reverso.net) - the most stable, free and without any limitation on the number of characters (version on the site is limited to 2000 characters and 900 in the application, through the API can get up to 8000). Does not contain official documentation, request was received from official site via *DevTools*.
-- [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open API (limit of 500 characters per request). Supports up to 3 response options for short queries.
-- [OpenAI](https://platform.openai.com/docs/overview) - translate text using LLM (you need to pass the API key via a parameter, which is saved in a file for later use).
+- [DeepL](https://www.deepl.com) - free `API` via [DeepLX](https://github.com/OwO-Network/DeepLX) using [serverless](https://github.com/LegendLeo/deeplx-serverless) hosted on [Vercel](https://github.com/bropines/Deeplx-vercel) platform. There are limits on the number of translation requests that can be made frequently, and there may also be a limit on the number of characters that can be used (the official limit is 5000 characters per request).
+- [Reverso](https://www.reverso.net) - the most stable, free and without any limitation on the number of characters (version on the site is limited to 2000 characters and 900 in the application, through the `API` can get up to 8000). Does not contain official documentation, request was received from official site via *DevTools*.
+- [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open `API` (limit of 500 characters per request). Supports up to 3 response options for short queries.
+- [OpenAI](https://platform.openai.com/docs/overview) - use `LLM` with a preset system `prompt` through official OpenAI (need to transfer the `API` key through the parameter that is stored in the file for further use) or [LM Studio](https://lmstudio.ai) for the use of local models in offline mode (scheme of `API` requests and response correspond to OpenAI). It is recommended to choose a model previously trained in the right language.
 
 ## Install
 
-Use the [npm](https://www.npmjs.com/package/multranslate) package manager:
+Use the [NPM](https://www.npmjs.com/package/multranslate) package manager to install a stable version:
 
 ```shell
 npm install -g multranslate
+```
+
+Or install from the GitHub repository:
+
+```shell
+npm install -g ttps://github.com/Lifailon/multranslate
 ```
 
 Run the application:
@@ -45,15 +51,18 @@ multranslate --help
 
 Usage: multranslate [options]
 
-Cross-platform TUI for translating text in multiple translators simultaneously and LLM via OpenAI, with support for
+Cross-platform TUI for translating text in multiple translators simultaneously and LLM, with support for
 translation history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv, ro,
-  cs, da, pt, vi (default: "ru")
-  -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
-  -k, --key <value>        API key for using the OpenAI translator (will be saved for future use)
+  -l, --language <name>    Select the language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl,
+  sv, ro, cs, da, pt, vi (default: "ru")
+  -t, --translator <name>  Select the translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
+  -k, --key <value>        API key for OpenAI (will be saved for future use)
+  -s, --server <address>   Server address for OpenAI API or local LLM (default: "https://api.openai.com")
+  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini")
+  -e, --temp <number>      Select the temperature for LLM (default: 0.7)
   -h, --help               display help for command
 ```
 
@@ -131,7 +140,6 @@ You can also use any of the translators individually by specifying the appropria
 
 ## Hotkeys
 
-- `F2` - switch between all translators and OpenAI.
 - `Ctrl+<Enter/S>` - translation of text without breaking to a new line.
 - `Ctrl+V` - paste text from the clipboard (defined at the code level).
 - `Alt+C` - copy text from the input field to clipboard.
@@ -145,6 +153,8 @@ You can also use any of the translators individually by specifying the appropria
 - `Ctrl+<C/U/L>` - clear the text input field.
 - `Ctrl+W/Alt+Back` - delete the word before the cursor.
 - `Del/Ctrl+K` - deletes one letter or character after the cursor.
+- `F2` - switch to OpenAI with a preset translation prompt.
+- `F3` - switch to OpenAI in chat mode.
 - `Escape` - exit the program.
 
 Use the `F1` key to get help on available keyboard shortcuts:
@@ -172,3 +182,9 @@ The Blessed library is great and has no analogues in its functionality for `Java
 If you plan to use this library for similar tasks where text input is required, then add `class TextBuffer` and control of hotkeys (`keypress`) via `inputBox.on()` to your code. It took me several weeks to achieve full functionality for working with text, the key problem is the built-in line break (`autowrap`) and the shift of the custom cursor.
 
 Over the course of daily use for 6 months, I can confirm that it works stably.
+
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+Copyright (C) 2024 Lifailon (Alex Kup)

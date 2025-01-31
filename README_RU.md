@@ -12,24 +12,30 @@
  <a href="README.md">English</a> | <strong>Русский</strong>
 </h4>
 
-Кроссплатформенный терминальный пользовательский интерфейс (TUI) на базе библиотеки [Blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких популярных источников перевода, а также LLM через [OpenAI](https://openai.com). Все источники перевода не требуют токена доступа (API ключа, за *исключением OpenAI*) или других настроек. Поддерживает автоматическое определение исходного и целевого языка на уровне кода между английским и любым из поддерживаемых языков (русский по умолчанию), а также доступ к истории переводов через [SQLite](https://github.com/WiseLibs/better-sqlite3) (до 500 запросов, после чего используется автоматическая очистка старых записей из истории).
+Кроссплатформенный терминальный пользовательский интерфейс на базе библиотеки [Blessed](https://github.com/chjj/blessed) для одновременного перевода текста с использованием нескольких популярных источников перевода и `LLM`. Все источники не требуют токена доступа к API (за исключением официального OpenAI). Поддерживает автоматическое определение исходного и целевого языка на уровне кода между английским и любым из поддерживаемых языков (русский по умолчанию), а также доступ к истории переводов через [SQLite](https://github.com/WiseLibs/better-sqlite3) (до 500 запросов, после чего используется автоматическая очистка старых записей из истории).
 
 ![interface](/image/interface.jpg)
 
 ## Источники перевода
 
 - [Google](https://translate.google.com) - бесплатный и безлимитный [API](https://github.com/vitalets/google-translate-api) с использованием [serverless](https://github.com/olavoparno/translate-serverless-vercel) размещенный на платформе Vercel. Доступно для перевода более 5000 символов.
-- [DeepL](https://www.deepl.com) - бесплатный API через [DeepLX](https://github.com/OwO-Network/DeepLX) с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless) размещенный на платформе [Vercel](https://github.com/bropines/Deeplx-vercel). Присутствуют ограничения на частое количество запросов перевода, а также может иметь ограничение при использование большого количества символов (официальное ограничение в 5000 символов на запрос).
+- [DeepL](https://www.deepl.com) - бесплатный `API` через [DeepLX](https://github.com/OwO-Network/DeepLX) с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless) размещенный на платформе [Vercel](https://github.com/bropines/Deeplx-vercel). Присутствуют ограничения на частое количество запросов перевода, а также может иметь ограничение при использование большого количества символов (официальное ограничение в 5000 символов на запрос).
 - [Reverso](https://www.reverso.net) - самый стабильный, бесплатный и без ограничений на количество символов (версия на сайте ограничена 2000 символам и 900 в приложение, через `API` возможно получить до 8000). Не содержит официальной документации, запрос был получен с официального сайта через *DevTools*.
-- [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый API (ограничение в 500 символов на запрос). Поддерживает до 3 вариантов ответа для коротких запросов.
-- [OpenAI](https://platform.openai.com/docs/overview) - перевод текста с использованием LLM (необходимо передать ключ API через параметр, который сохраняется в файле для дальнейшего использования).
+- [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый `API` (ограничение в 500 символов на запрос). Поддерживает до 3 вариантов ответа для коротких запросов.
+- [OpenAI](https://platform.openai.com/docs/overview) - использование `LLM` с предустановленным ситемным `prompt` через официальный OpenAI (необходимо передать ключ `API` через параметр, который сохраняется в файле для дальнейшего использования) или [LM Studio](https://lmstudio.ai) для использования локальных моделей в автономном режиме (схема запросов и ответов `API` соответствуют OpenAI). Рекомендуется выбрать модель, предварительно обученную на нужном языке (например, [llama-3-8b-gpt-4o-ru](https://huggingface.co/ruslandev/llama-3-8b-gpt-4o-ru1.0-gguf)).
 
 ## Установка
 
-Используйте менеджер пакетов [npm](https://www.npmjs.com/package/multranslate):
+Используйте менеджер пакетов [npm](https://www.npmjs.com/package/multranslate) для установки стабильной версии:
 
 ```shell
 npm install -g multranslate
+```
+
+Или установите из репозитория GitHub:
+
+```shell
+npm install -g ttps://github.com/Lifailon/multranslate
 ```
 
 Запустите приложение:
@@ -45,15 +51,18 @@ multranslate --help
 
 Usage: multranslate [options]
 
-Cross-platform TUI for translating text in multiple translators simultaneously and LLM via OpenAI, with support for
+Cross-platform TUI for translating text in multiple translators simultaneously and LLM, with support for
 translation history and automatic language detection.
 
 Options:
   -V, --version            output the version number
-  -l, --language <name>    select language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl, sv, ro,
-  cs, da, pt, vi (default: "ru")
-  -t, --translator <name>  select translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
-  -k, --key <value>        API key for using the OpenAI translator (will be saved for future use)
+  -l, --language <name>    Select the language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl,
+  sv, ro, cs, da, pt, vi (default: "ru")
+  -t, --translator <name>  Select the translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
+  -k, --key <value>        API key for OpenAI (will be saved for future use)
+  -s, --server <address>   Server address for OpenAI API or local LLM (default: "https://api.openai.com")
+  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini")
+  -e, --temp <number>      Select the temperature for LLM (default: 0.7)
   -h, --help               display help for command
 ```
 
@@ -131,7 +140,6 @@ npm start
 
 ## Горячие клавиши
 
-- `F2` - переключение между всеми переводчиками и OpenAI.
 - `Ctrl+<Enter/S>` - перевод текста без переноса на новую строку.
 - `Ctrl+V` - вставка текста из буфера обмена (определено на уровне кода).
 - `Alt+C` - скопировать текст из поля ввода в буфер обмена.
@@ -145,6 +153,8 @@ npm start
 - `Ctrl+<C/U/L>` - очистить поле ввода текста.
 - `Ctrl+W/Alt+Back` - удалить словосочетание перед курсором.
 - `Del/Ctrl+K` - удалить одну букву или символ после курсора.
+- `f2` - переключиться на OpenAI с предустановленным prompt для перевода.
+- `f3` - переключиться на OpenAI в режиме чата.
 - `Escape` - выход из программы.
 
 Используйте клавишу `F1`, для получения справки по доступным сочетаниям клавиш:
@@ -172,3 +182,9 @@ npm start
 Если вы планируете использовать данную библиотеку для схожих задач где требуется ввод текста, то добавьте в свой код `class TextBuffer` и управление корячими клавишами (`keypress`) через `inputBox.on()`. Мне понадобилось несколько недель, что бы добиться полноценной возможности работы с текстом, ключевая проблема, это встренный перенос строки (`autowrap`) и сдвиг пользовательского курсора.
 
 На протяжение ежедневного использования в течении 6 месяцев могу подтвердить, что это работает стабильно. 
+
+## License
+
+Этот проект лицензирован по лицензии **MIT**. См. файл [лицензии](LICENSE) для получения подробной информации.
+
+Copyright (C) 2024 Lifailon (Alex Kup)
