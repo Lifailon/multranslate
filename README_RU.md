@@ -35,7 +35,7 @@ npm install -g multranslate
 Или установите из репозитория GitHub:
 
 ```shell
-npm install -g ttps://github.com/Lifailon/multranslate
+npm install -g https://github.com/Lifailon/multranslate
 ```
 
 Запустите приложение:
