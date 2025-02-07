@@ -1,6 +1,6 @@
 {
   "name": "multranslate",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Cross-platform TUI for translating text in multiple translators simultaneously and LLM, with support for translation history and automatic language detection.",
   "keywords": [
     "tui",
@@ -30,8 +30,8 @@
     "dev": "node multranslate-native-cursor.js"
   },
   "dependencies": {
-    "axios": "^1.7.5",
-    "better-sqlite3": "^11.3.0",
+    "axios": "^1.7.9",
+    "better-sqlite3": "^11.8.1",
     "blessed": "^0.1.81",
     "clipboardy": "^4.0.0",
     "commander": "^12.1.0"
@@ -48,7 +48,8 @@
       "node_modules/url/**/*",
       "node_modules/path/**/*",
       "node_modules/fs/**/*",
-      "node_modules/commander/**/*"
+      "node_modules/commander/**/*",
+      "image/logo.png"
     ],
     "targets": [
       "node18-win-x64",
