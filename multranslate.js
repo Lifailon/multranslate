@@ -104,25 +104,22 @@ program
     )
     .option(
         '-k, --key <value>',
-        'API key for OpenAI (will be saved for future use)'
+        'API key parameter for OpenAI (high priority) or using the environment "OPENAI_API_KEY"'
     )
     .option(
-        '-s, --server <address>',
-        'Server address for OpenAI API or local LLM',
-        'https://api.openai.com'
+        '-o, --openaiUrl <url>',
+        'Url address for OpenAI API or local LLM (default: "https://api.openai.com" or the environment "OPENAI_URL")'
     )
     .option(
         '-m, --model <name>',
-        'Select the LLM model',
-        'gpt-4o-mini'
+        'Select the LLM model (default: "gpt-4o-mini" or the environment "OPENAI_MODEL")'
     )
     .option(
         '-e, --temp <number>',
-        'Select the temperature for LLM',
-        0.7
+        'Select the temperature for LLM (default: "0.7" or the environment "OPENAI_TEMP")'
     )
     .parse(process.argv)
-
+    
 // Language
 const inputLanguage = program.opts().language.toLowerCase()
 const languagesLowerCase = languages.map(t => t.toLowerCase())
@@ -141,29 +138,49 @@ if (!translatorsLowerCase.includes(inputTranslator)) {
 }
 selectedTranslator = translators[translatorsLowerCase.indexOf(inputTranslator)]
 
-// Проверка API ключа
+// Проверяем параметры и переменные окружения для настройки подключения к OpenAI
 let apiKey = program.opts().key
+if (!apiKey) {
+    apiKey = process.env.OPENAI_API_KEY
+}
+
+// Если не передан через параметр, то проверяем переменную окружения или определяем значение по умолчанию
+let openaiUrl = program.opts().openaiUrl
+if (!openaiUrl) {
+    openaiUrl = process.env.OPENAI_URL ? process.env.OPENAI_URL : "https://api.openai.com"
+}
+
+let openaiModel = program.opts().model
+if (!openaiModel) {
+    openaiModel = process.env.OPENAI_MODEL ? process.env.OPENAI_MODEL : "gpt-4o-mini"
+}
+
+let openaiTemp = program.opts().temp
+if (!openaiTemp) {
+    openaiTemp = process.env.OPENAI_TEMP ? process.env.OPENAI_TEMP : "0.7"
+    openaiTemp = parseFloat(openaiModel)
+}
 
 // Если ключ передан, сохраняем его в файл
-if (apiKey) {
-    try {
-        writeFileSync(apiKeyPath, apiKey, { encoding: 'utf8' })
-    } catch (error) {
-        console.error(`Error saving API key to file: ${error.message}`)
-        process.exit(1)
-    }
-}
+// if (apiKey) {
+//     try {
+//         writeFileSync(apiKeyPath, apiKey, { encoding: 'utf8' })
+//     } catch (error) {
+//         console.error(`Error saving API key to file: ${error.message}`)
+//         process.exit(1)
+//     }
+// }
 // Если ключ не передан, загружаем его из файла
-else {
-    try {
-        apiKey = readFileSync(apiKeyPath, 'utf8').trim()
-    } catch (error) {
-        if (selectedTranslator === 'OpenAI') {
-            console.error('API key not found.')
-            process.exit(1)
-        }
-    }
-}
+// else {
+//     try {
+//         apiKey = readFileSync(apiKeyPath, 'utf8').trim()
+//     } catch (error) {
+//         if (selectedTranslator === 'OpenAI') {
+//             console.error('API key not found.')
+//             process.exit(1)
+//         }
+//     }
+// }
 
 // blessed => screen
 var screen = blessed.screen({
@@ -1444,10 +1461,11 @@ function loader(action) {
 // OpenAI API Docs: https://platform.openai.com/docs/api-reference/introduction
 // LM Studio: https://lmstudio.ai (0.6.1)
 // LM Studio API Docs (OpenAI Compatibility): https://lmstudio.ai/docs/api/endpoints/openai
-// npm start -- -s "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
-// npm start -- -s "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
+// npm start -- -o "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
+// npm start -- -o "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
+// npm start -- -o "http://127.0.0.1:1234" -m "llama-3-8b-gpt-4o-ru1.0"
 async function translateOpenAI(text) {
-    const apiUrl = `${program.opts().server}/v1/chat/completions`
+    const apiUrl = `${openaiUrl}/v1/chat/completions`
     let prompt = ""
     if (selectedModeOpenAI == "translate") {
         prompt = getPrompt(text)
@@ -1457,7 +1475,7 @@ async function translateOpenAI(text) {
         const response = await axios.post(
             apiUrl,
             {
-                model: program.opts().model,
+                model: openaiModel,
                 messages: [
                     {
                         role: 'system',
@@ -1469,7 +1487,7 @@ async function translateOpenAI(text) {
                     }
                 ],
                 // Температура ответов (от 0.0 до 2.0)
-                temperature: program.opts().temp,
+                temperature: openaiTemp,
                 // Включаем потоковую передачу ответа (Debug: отключить для заглушки)
                 stream: true
             },
@@ -1543,7 +1561,7 @@ async function translateOpenAI(text) {
 
 // Ollama: https://github.com/ollama/ollama
 async function translateOllama(text) {
-    const apiUrl = `http://${program.opts().server}/api/generate`
+    const apiUrl = `http://${openaiUrl}/api/generate`
     let prompt
     if (selectedModeOllama == "translate") {
         prompt = getPrompt(text)
@@ -1555,7 +1573,7 @@ async function translateOllama(text) {
         const response = await axios.post(
             apiUrl,
             {
-                model: program.opts().model,
+                model: openaiModel,
                 prompt: prompt
             },
             {
