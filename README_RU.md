@@ -22,7 +22,7 @@
 - [DeepL](https://www.deepl.com) - бесплатный `API` через [DeepLX](https://github.com/OwO-Network/DeepLX) с использованием [serverless](https://github.com/LegendLeo/deeplx-serverless) размещенный на платформе [Vercel](https://github.com/bropines/Deeplx-vercel). Присутствуют ограничения на частое количество запросов перевода, а также может иметь ограничение при использование большого количества символов (официальное ограничение в 5000 символов на запрос).
 - [Reverso](https://www.reverso.net) - самый стабильный, бесплатный и без ограничений на количество символов (версия на сайте ограничена 2000 символам и 900 в приложение, через `API` возможно получить до 8000). Не содержит официальной документации, запрос был получен с официального сайта через *DevTools*.
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - бесплатный и открытый `API` (ограничение в 500 символов на запрос). Поддерживает до 3 вариантов ответа для коротких запросов.
-- [OpenAI](https://platform.openai.com/docs/overview) - использование `LLM` с предустановленным ситемным `prompt` через официальный OpenAI (необходимо передать ключ `API` через параметр, который сохраняется в файле для дальнейшего использования) или [LM Studio](https://lmstudio.ai) для использования локальных моделей в автономном режиме (схема запросов и ответов `API` соответствуют OpenAI). Рекомендуется выбрать модель, предварительно обученную на нужном языке (например, [llama-3-8b-gpt-4o-ru](https://huggingface.co/ruslandev/llama-3-8b-gpt-4o-ru1.0-gguf)).
+- [OpenAI](https://platform.openai.com/docs/overview) - использование `LLM` с предустановленным ситемным `prompt` через официальный OpenAI (необходимо передать ключ `API` через параметр `--key` или переменную окружения `OPENAI_API_KEY`) или [LM Studio](https://lmstudio.ai) для использования локальных моделей в автономном режиме (схема запросов и ответов `API` соответствуют OpenAI). Рекомендуется выбрать модель, предварительно обученную на нужном языке (например, используя фильтр `translation` на [Hugging Face](https://huggingface.co/models?pipeline_tag=translation)).
 
 ## Установка
 
@@ -59,11 +59,37 @@ Options:
   -l, --language <name>    Select the language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl,
   sv, ro, cs, da, pt, vi (default: "ru")
   -t, --translator <name>  Select the translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
-  -k, --key <value>        API key for OpenAI (will be saved for future use)
-  -s, --server <address>   Server address for OpenAI API or local LLM (default: "https://api.openai.com")
-  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini")
-  -e, --temp <number>      Select the temperature for LLM (default: 0.7)
+  -k, --key <value>        API key parameter for OpenAI (high priority) or using the environment "OPENAI_API_KEY"
+  -o, --openaiUrl <url>    Url address for OpenAI API or local LLM (default: "https://api.openai.com" or the environment "OPENAI_URL")
+  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini" or the environment "OPENAI_MODEL")
+  -e, --temp <number>      Select the temperature for LLM (default: "0.7" or the environment "OPENAI_TEMP")
   -h, --help               display help for command
+```
+
+Для использования OpenAI необходимо передать параметры для подключения к `API` (имеет высокий приоритет) или использовать переменные окружения.
+
+Пример для Linux и OpenAI:
+
+```Bash
+export OPENAI_API_KEY="sk-proj-..."
+multranslate
+```
+
+Вы можете сохранить переменную окружения для дальнейшего использования после переподключения к текущей сессии терминала.
+
+```Bash
+echo 'export OPENAI_API_KEY="sk-proj-..."' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Рекомендуется вносить изменения в файл профиля через любой текстовый редактор, например, `nano`, что бы содержимое ключа не сохранялось в истории команд.
+
+Пример для Windows и LM Studio:
+
+```PowerShell
+$env:OPENAI_URL = "http://127.0.0.1:1234"
+$env:OPENAI_MODEL = "llama-3-8b-gpt-4o-ru1.0"
+multranslate
 ```
 
 ## Сборка
@@ -172,6 +198,8 @@ npm start
 ## Задачи
 
 - Переписать код на TypeScript.
+- Упаковать приложение в исполняемый файл.
+- Написать тесты для проверки функций перевода.
 - Реализовать поддержку нативного курсора (наработки в [multranslate-native-cursor](multranslate-native-cursor.js)).
 - Добавить проверку текста на стиль и грамматику (орфографии) через [LanguageTool](https://languagetool.org/http-api).
 

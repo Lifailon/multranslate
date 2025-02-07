@@ -22,7 +22,7 @@ Cross-platform terminal user interface based on the [Blessed](https://github.com
 - [DeepL](https://www.deepl.com) - free `API` via [DeepLX](https://github.com/OwO-Network/DeepLX) using [serverless](https://github.com/LegendLeo/deeplx-serverless) hosted on [Vercel](https://github.com/bropines/Deeplx-vercel) platform. There are limits on the number of translation requests that can be made frequently, and there may also be a limit on the number of characters that can be used (the official limit is 5000 characters per request).
 - [Reverso](https://www.reverso.net) - the most stable, free and without any limitation on the number of characters (version on the site is limited to 2000 characters and 900 in the application, through the `API` can get up to 8000). Does not contain official documentation, request was received from official site via *DevTools*.
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open `API` (limit of 500 characters per request). Supports up to 3 response options for short queries.
-- [OpenAI](https://platform.openai.com/docs/overview) - use `LLM` with a preset system `prompt` through official OpenAI (need to transfer the `API` key through the parameter that is stored in the file for further use) or [LM Studio](https://lmstudio.ai) for the use of local models in offline mode (scheme of `API` requests and response correspond to OpenAI). It is recommended to choose a model previously trained in the right language.
+- [OpenAI](https://platform.openai.com/docs/overview) - use `LLM` with a preset system `prompt` through official OpenAI (you must pass the `API` key via the `--key` parameter or the `OPENAI_API_KEY` environment variable) or [LM Studio](https://lmstudio.ai) for the use of local models in offline mode (scheme of `API` requests and response correspond to OpenAI). It is recommended to choose a model previously trained in the right language (for example, using the `translation` filter on [Huging Face](https://huggingface.co/models?pipeline_tag=translation)).
 
 ## Install
 
@@ -59,11 +59,37 @@ Options:
   -l, --language <name>    Select the language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl,
   sv, ro, cs, da, pt, vi (default: "ru")
   -t, --translator <name>  Select the translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
-  -k, --key <value>        API key for OpenAI (will be saved for future use)
-  -s, --server <address>   Server address for OpenAI API or local LLM (default: "https://api.openai.com")
-  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini")
-  -e, --temp <number>      Select the temperature for LLM (default: 0.7)
+  -k, --key <value>        API key parameter for OpenAI (high priority) or using the environment "OPENAI_API_KEY"
+  -o, --openaiUrl <url>    Url address for OpenAI API or local LLM (default: "https://api.openai.com" or the environment "OPENAI_URL")
+  -m, --model <name>       Select the LLM model (default: "gpt-4o-mini" or the environment "OPENAI_MODEL")
+  -e, --temp <number>      Select the temperature for LLM (default: "0.7" or the environment "OPENAI_TEMP")
   -h, --help               display help for command
+```
+
+To use OpenAI, you need to pass parameters to connect to `API` (has high priority) or use environment variables.
+
+Example for Linux and OpenAI:
+
+```Bash
+export OPENAI_API_KEY="sk-proj-..."
+multranslate
+```
+
+You can save the environment variable for later use after reconnecting to the current terminal session.
+
+```Bash
+echo 'export OPENAI_API_KEY="sk-proj-..."' >> ~/.bashrc
+source ~/.bashrc
+```
+
+It is recommended to make changes to the profile file through any text editor, for example, `nano`, so that the key content is not saved in the command history.
+
+Example for Windows and LM Studio:
+
+```PowerShell
+$env:OPENAI_URL = "http://127.0.0.1:1234"
+$env:OPENAI_MODEL = "llama-3-8b-gpt-4o-ru1.0"
+multranslate
 ```
 
 ## Build
@@ -172,6 +198,8 @@ If you like to use this interface, you can make a contribution, just translate t
 ## Backlog
 
 - Rewrite code to TypeScript.
+- Pack the application in the executable file.
+- Write tests to check the functions of translation.
 - Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
 - Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
 
