@@ -12,7 +12,7 @@
     <strong>English</strong> | <a href="README_RU.md">Русский</a>
 </h4>
 
-Cross-platform terminal user interface based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources and `LLM`. All sources do not require an API access token (with the exception of official OpenAI). Supports automatic source and target language definition at code level between English and any of the [supported languages](#supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
+Cross-platform terminal user interface based on the [Blessed](https://github.com/chjj/blessed) library for simultaneous text translation using several popular translation sources and `LLM`. All sources do not require an API access token (with the exception of official OpenAI or OpenRouter). Supports automatic source and target language definition at code level between English and any of the [supported languages](#supported-languages), as well as access to translation history via [SQLite](https://github.com/WiseLibs/better-sqlite3) (up to 500 requests, after which old records from the history are automatically cleared).
 
 ![interface](/image/interface.jpg)
 
@@ -22,7 +22,10 @@ Cross-platform terminal user interface based on the [Blessed](https://github.com
 - [DeepL](https://www.deepl.com) - free `API` via [DeepLX](https://github.com/OwO-Network/DeepLX) using [serverless](https://github.com/LegendLeo/deeplx-serverless) hosted on [Vercel](https://github.com/bropines/Deeplx-vercel) platform. There are limits on the number of translation requests that can be made frequently, and there may also be a limit on the number of characters that can be used (the official limit is 5000 characters per request).
 - [Reverso](https://www.reverso.net) - the most stable, free and without any limitation on the number of characters (version on the site is limited to 2000 characters and 900 in the application, through the `API` can get up to 8000). Does not contain official documentation, request was received from official site via *DevTools*.
 - [MyMemory](https://mymemory.translated.net/doc/spec.php) - free and open `API` (limit of 500 characters per request). Supports up to 3 response options for short queries.
-- [OpenAI](https://platform.openai.com/docs/overview) - use `LLM` with a preset system `prompt` through official OpenAI (you must pass the `API` key via the `--key` parameter or the `OPENAI_API_KEY` environment variable) or [LM Studio](https://lmstudio.ai) for the use of local models in offline mode (scheme of `API` requests and response correspond to OpenAI). It is recommended to choose a model previously trained in the right language (for example, using the `translation` filter on [Huging Face](https://huggingface.co/models?pipeline_tag=translation)).
+- [LLM](https://en.wikipedia.org/wiki/Large_language_model) - using large language models with a pre-installed system `prompt` for text translation or in chat mode with support for streaming responses.
+- - [OpenAI](https://platform.openai.com/docs/overview) is the official provider of the `ChatGPT` model. To use, you must pass the `API` key via the `--key` parameter (has a higher priority) or use the `OPENAI_API_KEY` environment variable (similarly for `OpenRouter`).
+- - [OpenRouter](https://openrouter.ai) is a universal provider that provides unified access to different models. Supports free models (e.g. [DeepSeek R1](https://openrouter.ai/deepseek/deepseek-r1:free)), allowing you to use it without replenishing your account immediately after registration. To use, you need to pass the url and the `API` key via parameters or environment variables, similar to `OpenAI`.
+- - [LM Studio](https://lmstudio.ai) is an interface for running and using local models in offline mode (the `API` request and response scheme corresponds to `OpenAI`). It is recommended to choose a model pre-trained in the desired language (for example, using the `translation` filter on [Hugging Face](https://huggingface.co/models?pipeline_tag=translation)).
 
 ## Install
 
@@ -57,18 +60,21 @@ translation history and automatic language detection.
 Options:
   -V, --version            output the version number
   -l, --language <name>    Select the language: ru, ja, zh, ko, ar, tr, uk, sk, pl, de, fr, it, es, el, hu, nl,
-  sv, ro, cs, da, pt, vi (default: "ru")
+  sv, ro, cs, da, pt, vi (default: "ru" or the environment "TRANSLATE_LANGUAGE")
   -t, --translator <name>  Select the translator: all, Google, DeepL, Reverso, MyMemory, OpenAI (default: "all")
   -k, --key <value>        API key parameter for OpenAI (high priority) or using the environment "OPENAI_API_KEY"
-  -o, --openaiUrl <url>    Url address for OpenAI API or local LLM (default: "https://api.openai.com" or the environment "OPENAI_URL")
+  -u, --urlOpenai <url>    Url address for OpenAI, OpenRouter or local LLM API (default: "https://api.openai.com"
+  or the environment "OPENAI_URL")
   -m, --model <name>       Select the LLM model (default: "gpt-4o-mini" or the environment "OPENAI_MODEL")
   -e, --temp <number>      Select the temperature for LLM (default: "0.7" or the environment "OPENAI_TEMP")
   -h, --help               display help for command
 ```
 
-To use OpenAI, you need to pass parameters to connect to `API` (has high priority) or use environment variables.
+To use `OpenAI`, you need to pass parameters to connect to `API` (has high priority) or use environment variables (recommended).
 
-Example for Linux and OpenAI:
+### OpenAI
+
+Using environment variables in **Linux**:
 
 ```Bash
 export OPENAI_API_KEY="sk-proj-..."
@@ -80,17 +86,40 @@ You can save the environment variable for later use after reconnecting to the cu
 ```Bash
 echo 'export OPENAI_API_KEY="sk-proj-..."' >> ~/.bashrc
 source ~/.bashrc
+multranslate
 ```
 
 It is recommended to make changes to the profile file through any text editor, for example, `nano`, so that the key content is not saved in the command history.
 
-Example for Windows and LM Studio:
+### OpenRouter
+
+Using the `DeepSeek R1` free model via parameters:
+
+```Bash
+multranslate -u "https://openrouter.ai/api" -m "deepseek/deepseek-r1:free" -k "sk-or-v1-..."
+```
+
+Note that the default `/v1/chat/completions` append path is used for all requests.
+
+### LM Studio
+
+Using environment variables in **Windows**:
 
 ```PowerShell
 $env:OPENAI_URL = "http://127.0.0.1:1234"
 $env:OPENAI_MODEL = "llama-3-8b-gpt-4o-ru1.0"
 multranslate
 ```
+
+Save variables in the current user's environment via `PowerShell` for later use:
+
+```PowerShell
+[System.Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "sk-or-v1-...", "User")
+[System.Environment]::SetEnvironmentVariable("OPENAI_URL", "https://openrouter.ai/api", "User")
+[System.Environment]::SetEnvironmentVariable("OPENAI_MODEL", "deepseek/deepseek-r1:free", "User")
+```
+
+To apply, restart the terminal.
 
 ## Build
 
@@ -197,11 +226,12 @@ If you like to use this interface, you can make a contribution, just translate t
 
 ## Backlog
 
-- Rewrite code to TypeScript.
+- Rewrite code to `TypeScript`.
 - Pack the application in the executable file.
 - Write tests to check the functions of translation.
 - Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
 - Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
+- Add support for storing and clearing history via `SQLite` for `LLM` in chat mode.
 
 ## Text buffer
 

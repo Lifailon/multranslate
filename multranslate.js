@@ -94,8 +94,7 @@ program
     .version(pkg.version)
     .option(
         '-l, --language <name>',
-        `Select the language: ${languages.join(', ')}`,
-        'ru'
+        `Select the language: ${languages.join(', ')} (default: "ru" or the environment "TRANSLATE_LANGUAGE")`,
     )
     .option(
         '-t, --translator <name>',
@@ -107,8 +106,8 @@ program
         'API key parameter for OpenAI (high priority) or using the environment "OPENAI_API_KEY"'
     )
     .option(
-        '-o, --openaiUrl <url>',
-        'Url address for OpenAI API or local LLM (default: "https://api.openai.com" or the environment "OPENAI_URL")'
+        '-u, --urlOpenai <url>',
+        'Url address for OpenAI, OpenRouter or local LLM API (default: "https://api.openai.com" or the environment "OPENAI_URL")'
     )
     .option(
         '-m, --model <name>',
@@ -121,7 +120,10 @@ program
     .parse(process.argv)
     
 // Language
-const inputLanguage = program.opts().language.toLowerCase()
+let inputLanguage = program.opts().language?.toLowerCase()
+if (!inputLanguage) {
+    inputLanguage = process.env.TRANSLATE_LANGUAGE ? process.env.TRANSLATE_LANGUAGE : "ru"
+}
 const languagesLowerCase = languages.map(t => t.toLowerCase())
 if (!languagesLowerCase.includes(inputLanguage)) {
     console.error(`Invalid parameter value. Choose one of: ${languages.join(', ')}`)
@@ -145,9 +147,9 @@ if (!apiKey) {
 }
 
 // Если не передан через параметр, то проверяем переменную окружения или определяем значение по умолчанию
-let openaiUrl = program.opts().openaiUrl
-if (!openaiUrl) {
-    openaiUrl = process.env.OPENAI_URL ? process.env.OPENAI_URL : "https://api.openai.com"
+let urlOpenai = program.opts().urlOpenai
+if (!urlOpenai) {
+    urlOpenai = process.env.OPENAI_URL ? process.env.OPENAI_URL : "https://api.openai.com"
 }
 
 let openaiModel = program.opts().model
@@ -1025,6 +1027,7 @@ inputBox.on('keypress', async function (ch, key) {
         outputBox2.scroll(-1)
         outputBox3.scroll(-1)
         outputBox4.scroll(-1)
+        outputBox5.scroll(-1)
 
     }
     else if (key.name === 'down' && key.shift === true) {
@@ -1032,6 +1035,7 @@ inputBox.on('keypress', async function (ch, key) {
         outputBox2.scroll(1)
         outputBox3.scroll(1)
         outputBox4.scroll(1)
+        outputBox5.scroll(1)
 
     }
     // Поднимаем поле ввода текста вверх для ручного скроллинга (Ctrl/Alt+Up/Down)
@@ -1461,11 +1465,13 @@ function loader(action) {
 // OpenAI API Docs: https://platform.openai.com/docs/api-reference/introduction
 // LM Studio: https://lmstudio.ai (0.6.1)
 // LM Studio API Docs (OpenAI Compatibility): https://lmstudio.ai/docs/api/endpoints/openai
-// npm start -- -o "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
-// npm start -- -o "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
-// npm start -- -o "http://127.0.0.1:1234" -m "llama-3-8b-gpt-4o-ru1.0"
+// npm start -- -u "http://127.0.0.1:1234" -m "deepseek-r1-distill-llama-8b"
+// npm start -- -u "http://127.0.0.1:1234" -m "llama-3.2-3b-instruct"
+// npm start -- -u "http://127.0.0.1:1234" -m "llama-3-8b-gpt-4o-ru1.0"
+// OpenRouter: https://openrouter.ai/ (0.6.3)
+// npm start -- -u "https://openrouter.ai/api" -m "deepseek/deepseek-r1:free" -k "sk-or-v1-KEY"
 async function translateOpenAI(text) {
-    const apiUrl = `${openaiUrl}/v1/chat/completions`
+    const apiUrl = `${urlOpenai}/v1/chat/completions`.replace(/\/{2,}/g, "/")
     let prompt = ""
     if (selectedModeOpenAI == "translate") {
         prompt = getPrompt(text)
@@ -1561,7 +1567,7 @@ async function translateOpenAI(text) {
 
 // Ollama: https://github.com/ollama/ollama
 async function translateOllama(text) {
-    const apiUrl = `http://${openaiUrl}/api/generate`
+    const apiUrl = `http://${urlOpenai}/api/generate`
     let prompt
     if (selectedModeOllama == "translate") {
         prompt = getPrompt(text)
