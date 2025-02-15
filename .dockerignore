@@ -1,0 +1,7 @@
+.git
+node_modules
+package-lock.json
+image
+mock
+*.md
+multranslate-native-cursor.js
