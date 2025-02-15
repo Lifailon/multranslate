@@ -137,6 +137,17 @@ npm install
 npm start
 ```
 
+## Docker
+
+Configure the [env](.env) environment variable file for language selection and connection to the LLM.
+
+Build the image and run a temporary container (`volume` is used to store history between runs):
+
+```shell
+docker build -t multranslate .
+docker run --env-file .env -it --rm -v multranslate:/multranslate multranslate
+```
+
 ## Supported languages
 
 You can change the language for automatic definition between English and any of those presented in the table below:
@@ -227,7 +238,6 @@ If you like to use this interface, you can make a contribution, just translate t
 ## Backlog
 
 - Rewrite code to `TypeScript`.
-- Pack the application in the executable file.
 - Write tests to check the functions of translation.
 - Implement native cursor support (developments in [multranslate-native-cursor](multranslate-native-cursor.js)).
 - Check texts for style and grammar (spelling) via [LanguageTool](https://languagetool.org/http-api).
