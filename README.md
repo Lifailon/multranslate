@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://www.npmjs.com/package/multranslate"><img title="NPM"src="https://img.shields.io/npm/v/multranslate?logo=npm&logoColor=red"></a>
-    <a href="https://hub.docker.com/r/lifailon/multranslate"><img title="Docker Hub" src="https://img.shields.io/docker/image-size/lifailon/multranslate/latest?logo=docker&color=blue&label=Docker+Image"></a>
+    <a href="https://hub.docker.com/r/lifailon/multranslate"><img title="Docker" src="https://img.shields.io/docker/image-size/lifailon/multranslate/latest?logo=docker&color=blue&label=docker"></a>
     <a href="https://www.npmjs.com/package/multranslate"><img title="Language"src="https://img.shields.io/github/languages/top/Lifailon/multranslate?logo=JavaScript&color=yellow"></a>
     <a href="https://github.com/Lifailon/multranslate/blob/rsa/LICENSE"><img title="License"src="https://img.shields.io/github/license/Lifailon/multranslate?logo=readme&logoColor=white&color=white"></a>
 </p>
