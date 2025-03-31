@@ -1364,7 +1364,16 @@ async function translateReversoFetch(text) {
                     }
                 }),
                 headers: {
-                    'content-type': 'application/json'
+                    "accept": "application/json, text/plain, */*",
+                    "content-type": "application/json",
+                    "priority": "u=1, i",
+                    "sec-ch-ua": "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Google Chrome\";v=\"134\"",
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "same-site",
+                    "x-reverso-origin": "translation.web",
+                    "Referer": "https://www.reverso.net/",
+                    "Referrer-Policy": "strict-origin-when-cross-origin"
                 }
             }),
             timeoutPromise
